@@ -2,7 +2,8 @@ import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+import 'package:cloudinary_public/cloudinary_public.dart';
+import '../services/cloudinary_service.dart';
 
 enum BattleSubmissionKind { daily, weekly, mega }
 
@@ -48,7 +49,6 @@ class BattleSubmissionUser {
 
 class BattleSubmissionService {
   static FirebaseFirestore get _firestore => FirebaseFirestore.instance;
-  static FirebaseStorage get _storage => FirebaseStorage.instance;
 
   static BattleSubmissionCycle cycleFor(BattleSubmissionKind kind, DateTime now) {
     final today = DateTime(now.year, now.month, now.day);
@@ -390,17 +390,18 @@ class BattleSubmissionService {
     required String type,
     required File file,
   }) async {
-    final extension = file.path.split('.').last.toLowerCase();
-    final ref = _storage
-        .ref()
-        .child('battle_submissions')
-        .child(cycleId)
-        .child(username)
-        .child('battle$battleNumber')
-        .child('$type.$extension');
+    final folder = 'battle_submissions/$cycleId/$username/battle$battleNumber';
+    
+    // Determine resource type (image or video)
+    final resourceType = type == 'video' 
+        ? CloudinaryResourceType.Video 
+        : CloudinaryResourceType.Image;
 
-    await ref.putFile(file);
-    return ref.getDownloadURL();
+    return CloudinaryService().uploadFile(
+      file: file,
+      folder: folder,
+      resourceType: resourceType,
+    );
   }
 
   static DateTime _nextMegaLiveDay(DateTime today, int currentDay) {
