@@ -1,10 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'battle_submission_screen.dart';
 import 'battle_submission_service.dart';
 import 'coin_badge.dart';
+import 'info_content_screen.dart';
 import 'screen_constants.dart';
 
 class BattlesScreen extends StatelessWidget {
@@ -848,8 +850,65 @@ class _InfoCard extends StatelessWidget {
   }
 }
 
-class _SoloOnlyBanner extends StatelessWidget {
+class _SoloOnlyBanner extends StatefulWidget {
   const _SoloOnlyBanner();
+
+  @override
+  State<_SoloOnlyBanner> createState() => _SoloOnlyBannerState();
+}
+
+class _SoloOnlyBannerState extends State<_SoloOnlyBanner> {
+  late final TapGestureRecognizer _tapGestureRecognizer;
+
+  @override
+  void initState() {
+    super.initState();
+    _tapGestureRecognizer = TapGestureRecognizer()..onTap = _onSeeRulesTap;
+  }
+
+  @override
+  void dispose() {
+    _tapGestureRecognizer.dispose();
+    super.dispose();
+  }
+
+  void _onSeeRulesTap() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const InfoContentScreen(
+          title: 'Battle Rules',
+          sections: [
+            InfoSection(
+              title: 'Fair Play Policy',
+              content: [
+                'Use of any third-party tools or hacks is strictly prohibited.',
+                'Teaming up with opponents in solo matches will lead to a permanent ban.',
+                'Abusing bugs or glitches to gain an unfair advantage is not allowed.',
+              ],
+            ),
+            InfoSection(
+              title: 'Match Conduct',
+              content: [
+                'Ensure a stable internet connection before joining a battle.',
+                'Only Solo Arena matches are accepted. Duo or Squad matches are strictly prohibited.',
+                'Playing in a Duo/Squad will result in rejection of the submission and zero rewards.',
+                'Quitting a match early may result in zero rewards and loss of entry fee.',
+                'Respect all players and maintain a healthy gaming environment.',
+              ],
+            ),
+            InfoSection(
+              title: 'Rewards & Payouts',
+              content: [
+                'Coins are automatically credited after match verification.',
+                'In case of disputes, the decision of the DuelXZone team is final.',
+                'Physical rewards (for Mega/Weekly) require valid profile details.',
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -860,15 +919,15 @@ class _SoloOnlyBanner extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: Colors.amber.withValues(alpha: 0.4)),
       ),
-      child: const Row(
+      child: Row(
         children: [
-          Icon(Icons.warning_amber_rounded, color: Colors.amber, size: 24),
-          SizedBox(width: 12),
+          const Icon(Icons.warning_amber_rounded, color: Colors.amber, size: 24),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                const Text(
                   'SOLO ARENA MATCH ONLY',
                   style: TextStyle(
                     color: Colors.amber,
@@ -877,10 +936,28 @@ class _SoloOnlyBanner extends StatelessWidget {
                     letterSpacing: 0.5,
                   ),
                 ),
-                SizedBox(height: 2),
-                Text(
-                  'Only personal solo matches are accepted. Playing in a Duo or Squad will lead to rejected rewards.',
-                  style: TextStyle(fontSize: 13, height: 1.3),
+                const SizedBox(height: 2),
+                RichText(
+                  text: TextSpan(
+                    style: DefaultTextStyle.of(context).style.copyWith(
+                          fontSize: 13,
+                          height: 1.3,
+                        ),
+                    children: [
+                      const TextSpan(
+                        text: 'Only personal solo matches are accepted. Playing in a Duo or Squad will lead to rejected rewards. ',
+                      ),
+                      TextSpan(
+                        text: 'See Rules',
+                        style: const TextStyle(
+                          color: primaryColor,
+                          decoration: TextDecoration.underline,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        recognizer: _tapGestureRecognizer,
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
