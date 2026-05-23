@@ -421,8 +421,16 @@ class _AppShellState extends State<AppShell> {
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: systemOverlayStyle(background),
-      child: Scaffold(
-        body: IndexedStack(index: currentIndex, children: screens),
+      child: PopScope(
+        canPop: currentIndex == 0,
+        onPopInvokedWithResult: (didPop, result) {
+          if (didPop) return;
+          if (currentIndex != 0) {
+            AppTabController.goTo(0);
+          }
+        },
+        child: Scaffold(
+          body: IndexedStack(index: currentIndex, children: screens),
         bottomNavigationBar: Container(
           decoration: BoxDecoration(
             color: background,
@@ -469,8 +477,9 @@ class _AppShellState extends State<AppShell> {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _tabGlowIcon(IconData icon) {
     return Container(
