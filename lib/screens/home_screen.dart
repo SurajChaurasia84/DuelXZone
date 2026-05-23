@@ -4,10 +4,10 @@ import 'package:flutter/material.dart';
 
 import 'battle_room_screen.dart';
 import 'battle_service.dart';
+import 'battles_screen.dart';
 import 'coin_badge.dart';
 import 'coin_service.dart';
 import 'leaderboard_screen.dart';
-import 'navigation_controller.dart';
 import 'screen_constants.dart';
 import 'notification_screen.dart';
 import 'tournament_matches_screen.dart';
@@ -420,7 +420,13 @@ class _TournamentBanner extends StatelessWidget {
                     ),
                     const SizedBox(height: 6),
                     GestureDetector(
-                      onTap: () => AppTabController.goTo(1),
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const BattlesScreen(),
+                          ),
+                        );
+                      },
                       child: Text(
                         'See battles >',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
