@@ -4,10 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'edit_profile_screen.dart';
+import 'refer_screen.dart';
 import 'info_content_screen.dart';
 import 'screen_constants.dart';
 import 'theme_controller.dart';
@@ -342,22 +342,18 @@ class ProfileScreen extends StatelessWidget {
                       ),
                       ListTile(
                         contentPadding: EdgeInsets.zero,
-                        leading: const Icon(Icons.share_rounded, color: primaryColor),
-                        title: const Text('Share App'),
+                        leading: const Icon(Icons.people_rounded, color: primaryColor),
+                        title: const Text('Refer App'),
                         subtitle: Text(
-                          'Invite your friends to join DuelXZone',
+                          'Invite friends & earn 100 coins',
                           style: TextStyle(
                             color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                           ),
                         ),
-                        onTap: () async {
-                          final packageInfo = await PackageInfo.fromPlatform();
-                          final packageName = packageInfo.packageName;
-                          final shareText = 'Hey! Join me on DuelXZone and participate in exciting battles. Download now: https://play.google.com/store/apps/details?id=$packageName';
-                          
-                          await SharePlus.instance.share(
-                            ShareParams(
-                              text: shareText,
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const ReferScreen(),
                             ),
                           );
                         },
