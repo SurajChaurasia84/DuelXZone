@@ -459,7 +459,7 @@ class _BattleCard extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<String>(
-            value: selectedRank,
+            initialValue: selectedRank,
             onChanged: isDisabled ? null : onRankChanged,
             decoration: const InputDecoration(
               labelText: 'Rank',
