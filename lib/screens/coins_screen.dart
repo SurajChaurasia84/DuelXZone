@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import 'coin_badge.dart';
@@ -366,37 +367,148 @@ class _RewardActionCard extends StatelessWidget {
   }
 }
 
-class AllCoinHistoryScreen extends StatelessWidget {
+class AllCoinHistoryScreen extends StatefulWidget {
   const AllCoinHistoryScreen({super.key});
 
   @override
+  State<AllCoinHistoryScreen> createState() => _AllCoinHistoryScreenState();
+}
+
+class _AllCoinHistoryScreenState extends State<AllCoinHistoryScreen> {
+  final ScrollController _scrollController = ScrollController();
+  final List<DocumentSnapshot<Map<String, dynamic>>> _docs = [];
+  List<CoinHistoryEntry> _cachedEntries = [];
+  bool _isLoading = false;
+  bool _hasMore = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_scrollListener);
+    _initData();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_scrollListener);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollListener() {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
+      _loadMore();
+    }
+  }
+
+  Future<void> _initData() async {
+    final cached = await CoinService.loadLocalHistory();
+    if (mounted && cached.isNotEmpty && _docs.isEmpty) {
+      setState(() {
+        _cachedEntries = cached;
+      });
+    }
+    await _loadMore();
+  }
+
+  Future<void> _refresh() async {
+    setState(() {
+      _docs.clear();
+      _cachedEntries.clear();
+      _hasMore = true;
+    });
+    await _loadMore();
+  }
+
+  Future<void> _loadMore() async {
+    if (_isLoading || !_hasMore) return;
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+
+      var query = FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('coin_history')
+          .orderBy('createdAt', descending: true)
+          .limit(12);
+
+      if (_docs.isNotEmpty) {
+        query = query.startAfterDocument(_docs.last);
+      }
+
+      final snapshot = await query.get();
+      if (snapshot.docs.length < 12) {
+        _hasMore = false;
+      }
+
+      if (_docs.isEmpty && snapshot.docs.isNotEmpty) {
+        final freshEntries = snapshot.docs
+            .map((doc) => CoinHistoryEntry.fromMap(doc.data()))
+            .toList();
+        await CoinService.saveLocalHistory(freshEntries);
+      }
+
+      if (mounted) {
+        setState(() {
+          _docs.addAll(snapshot.docs);
+          _cachedEntries.clear();
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final showCached = _docs.isEmpty && _cachedEntries.isNotEmpty;
+    final displayList = showCached
+        ? _cachedEntries
+        : _docs.map((doc) => CoinHistoryEntry.fromMap(doc.data() ?? {})).toList();
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Coin History'),
         centerTitle: true,
       ),
-      body: StreamBuilder<List<CoinHistoryEntry>>(
-        stream: CoinService.historyStream(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          final items = snapshot.data ?? const <CoinHistoryEntry>[];
-          if (items.isEmpty) {
-            return const Center(child: Text('No coin history yet'));
-          }
+      body: displayList.isEmpty && _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : displayList.isEmpty
+              ? const Center(child: Text('No coin history yet'))
+              : RefreshIndicator(
+                  onRefresh: _refresh,
+                  color: primaryColor,
+                  child: ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    itemCount: displayList.length + (_hasMore && !showCached ? 1 : 0),
+                    itemBuilder: (context, index) {
+                      if (index == displayList.length) {
+                        return const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 16),
+                          child: Center(child: CircularProgressIndicator()),
+                        );
+                      }
 
-          return ListView.separated(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
-            itemCount: items.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 10),
-            itemBuilder: (context, index) {
-              return _HistoryTile(item: items[index]);
-            },
-          );
-        },
-      ),
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: _HistoryTile(item: displayList[index]),
+                      );
+                    },
+                  ),
+                ),
     );
   }
 }
