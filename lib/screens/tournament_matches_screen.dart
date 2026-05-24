@@ -31,7 +31,6 @@ class _TournamentMatchesScreenState extends State<TournamentMatchesScreen> {
   DateTime _now = DateTime.now();
   int? _joiningBattle;
   int? _uploadBattle;
-  TournamentProofType? _uploadType;
 
   @override
   void initState() {
@@ -89,15 +88,11 @@ class _TournamentMatchesScreenState extends State<TournamentMatchesScreen> {
                       Map<String, dynamic>.from((data['battle$index'] as Map<String, dynamic>?) ?? {}),
                   now: _now,
                   joining: _joiningBattle == index,
-                  uploadingScreenshot: _uploadBattle == index &&
-                      _uploadType == TournamentProofType.screenshot,
-                  uploadingRecording:
-                      _uploadBattle == index && _uploadType == TournamentProofType.recording,
+                  uploadingScreenshot: _uploadBattle == index,
                   onJoin: () => _joinBattle(index),
-                  onUpload: (type, roomId) => _pickAndUpload(
+                  onUpload: (roomId) => _pickAndUpload(
                     battleNumber: index,
                     roomId: roomId,
-                    type: type,
                   ),
                 ),
                 if (index != widget.battleCount) const SizedBox(height: 14),
@@ -142,16 +137,14 @@ class _TournamentMatchesScreenState extends State<TournamentMatchesScreen> {
   Future<void> _pickAndUpload({
     required int battleNumber,
     required String roomId,
-    required TournamentProofType type,
   }) async {
     setState(() {
       _uploadBattle = battleNumber;
-      _uploadType = type;
     });
 
     try {
       final result = await FilePicker.pickFiles(
-        type: type == TournamentProofType.screenshot ? FileType.image : FileType.video,
+        type: FileType.image,
       );
       final path = result?.files.single.path;
       if (path == null) return;
@@ -161,7 +154,6 @@ class _TournamentMatchesScreenState extends State<TournamentMatchesScreen> {
         battleNumber: battleNumber,
         roomId: roomId,
         file: File(path),
-        type: type,
       );
 
       if (!mounted) return;
@@ -169,11 +161,7 @@ class _TournamentMatchesScreenState extends State<TournamentMatchesScreen> {
         SnackBar(
           behavior: SnackBarBehavior.floating,
           backgroundColor: primaryColor,
-          content: Text(
-            type == TournamentProofType.screenshot
-                ? 'Battle $battleNumber screenshot uploaded'
-                : 'Battle $battleNumber recording uploaded',
-          ),
+          content: Text('Battle $battleNumber screenshot uploaded'),
         ),
       );
     } on FirebaseException catch (e) {
@@ -191,7 +179,6 @@ class _TournamentMatchesScreenState extends State<TournamentMatchesScreen> {
       if (mounted) {
         setState(() {
           _uploadBattle = null;
-          _uploadType = null;
         });
       }
     }
@@ -272,7 +259,6 @@ class _BattleSlot extends StatelessWidget {
     required this.now,
     required this.joining,
     required this.uploadingScreenshot,
-    required this.uploadingRecording,
     required this.onJoin,
     required this.onUpload,
   });
@@ -284,9 +270,8 @@ class _BattleSlot extends StatelessWidget {
   final DateTime now;
   final bool joining;
   final bool uploadingScreenshot;
-  final bool uploadingRecording;
   final VoidCallback onJoin;
-  final void Function(TournamentProofType type, String roomId) onUpload;
+  final void Function(String roomId) onUpload;
 
   @override
   Widget build(BuildContext context) {
@@ -325,7 +310,6 @@ class _BattleSlot extends StatelessWidget {
         final waiting = (room['status'] as String?) == 'waiting' || playerIds.length < 2;
 
         final screenshotDone = (battleData['screenshotUrl'] as String?)?.isNotEmpty == true;
-        final recordingDone = (battleData['recordingUrl'] as String?)?.isNotEmpty == true;
 
         return _TournamentBattleCard(
           title: 'Battle $battleNumber',
@@ -340,24 +324,12 @@ class _BattleSlot extends StatelessWidget {
               if (entry.key != currentUserId && entry.value is Map<String, dynamic>)
                 (entry.value['name'] as String?) ?? 'Player'
           ],
-          action: Column(
-            children: [
-              _UploadRow(
-                title: 'Screenshot',
-                done: screenshotDone,
-                loading: uploadingScreenshot,
-                enabled: !waiting && live && !screenshotDone,
-                onTap: () => onUpload(TournamentProofType.screenshot, roomId),
-              ),
-              const SizedBox(height: 12),
-              _UploadRow(
-                title: 'Screen Recording',
-                done: recordingDone,
-                loading: uploadingRecording,
-                enabled: !waiting && live && !recordingDone,
-                onTap: () => onUpload(TournamentProofType.recording, roomId),
-              ),
-            ],
+          action: _UploadRow(
+            title: 'Screenshot',
+            done: screenshotDone,
+            loading: uploadingScreenshot,
+            enabled: !waiting && live && !screenshotDone,
+            onTap: () => onUpload(roomId),
           ),
         );
       },
