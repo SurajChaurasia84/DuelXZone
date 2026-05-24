@@ -7,6 +7,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import 'edit_profile_screen.dart';
 import 'info_content_screen.dart';
 import 'screen_constants.dart';
 import 'theme_controller.dart';
@@ -170,6 +171,31 @@ class ProfileScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 12),
                       const Divider(),
+                      const SizedBox(height: 12),
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: const Icon(Icons.person, color: primaryColor),
+                        title: const Text('Edit Profile'),
+                        subtitle: Text(
+                          'Change name, username, game details',
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                          ),
+                        ),
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => EditProfileScreen(
+                                currentName: name,
+                                currentUsername: username,
+                                currentGame: game,
+                                currentGameId: gameId,
+                                currentGameLevel: gameLevel,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
                       const SizedBox(height: 12),
                       ListTile(
                         contentPadding: EdgeInsets.zero,
