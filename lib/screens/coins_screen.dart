@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 
 import 'coin_badge.dart';
 import 'coin_service.dart';
-import 'home_screen.dart';
 import 'screen_constants.dart';
 
 class CoinsScreen extends StatelessWidget {
