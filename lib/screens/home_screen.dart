@@ -1,12 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'battle_room_screen.dart';
 import 'battle_service.dart';
 import 'battles_screen.dart';
 import 'coin_badge.dart';
-import 'coin_service.dart';
 import 'edit_profile_screen.dart';
 import 'leaderboard_screen.dart';
 import 'screen_constants.dart';
@@ -261,9 +261,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
                 children: [
                   const _TournamentBanner(),
+                  const SizedBox(height: 20),
+                  const _RecentWinnersSection(),
                   const SizedBox(height: 22),
                   _PrimaryPlayButton(onTap: _showPlayOptions),
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 22),
                   _LeaderboardSection(
                     onTap: () {
                       Navigator.of(context).push(
@@ -273,7 +275,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       );
                     },
                   ),
+                  const SizedBox(height: 22),
+                  _DailyQuestsSection(userData: data),
                   const _TournamentActionSection(),
+                  const SizedBox(height: 14),
                   Text(
                     'Active Room',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
@@ -282,6 +287,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   const SizedBox(height: 14),
                   const _MyBattleRoomsSection(),
+                  const SizedBox(height: 24),
+                  const _CommunityBanner(),
                 ],
               ),
             );
@@ -928,6 +935,518 @@ class _BattleRoomTile extends StatelessWidget {
 }
 
 
+class _RecentWinnersSection extends StatelessWidget {
+  const _RecentWinnersSection();
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: FirebaseFirestore.instance
+          .collection('battles')
+          .orderBy('createdAt', descending: true)
+          .limit(30)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const SizedBox(
+            height: 48,
+            child: Center(
+              child: SizedBox(
+                height: 16,
+                width: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
+          );
+        }
+
+        final docs = snapshot.data?.docs ?? [];
+        final winners = <Map<String, dynamic>>[];
+        for (final doc in docs) {
+          final data = doc.data();
+          final status = data['status'] as String? ?? '';
+          final winnerId = data['winnerId'] as String?;
+          final entryFee = (data['entryFee'] as num?)?.toInt() ?? 0;
+          final players = Map<String, dynamic>.from(data['players'] as Map? ?? {});
+
+          if (status == 'completed' && winnerId != null && winnerId.isNotEmpty) {
+            final winnerData = players[winnerId] as Map?;
+            final name = winnerData?['name'] as String? ?? 'Player';
+            winners.add({
+              'id': winnerId,
+              'name': name,
+              'amount': entryFee * 2,
+            });
+          }
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.stars_rounded, color: Colors.amber, size: 18),
+                const SizedBox(width: 6),
+                Text(
+                  'RECENT WINNERS',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1.0,
+                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                      ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              height: 48,
+              child: winners.isEmpty
+                  ? Container(
+                      alignment: Alignment.center,
+                      padding: const EdgeInsets.only(left: 4),
+                      child: Text(
+                        'No recent winners',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4),
+                          fontStyle: FontStyle.italic,
+                          fontSize: 13,
+                        ),
+                      ),
+                    )
+                  : ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: winners.length,
+                      physics: const BouncingScrollPhysics(),
+                      itemBuilder: (context, index) {
+                        final winner = winners[index];
+                        return _WinnerCard(
+                          winnerId: winner['id'] as String,
+                          name: winner['name'] as String,
+                          amount: winner['amount'] as int,
+                        );
+                      },
+                    ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _WinnerCard extends StatefulWidget {
+  const _WinnerCard({
+    required this.winnerId,
+    required this.name,
+    required this.amount,
+  });
+
+  final String winnerId;
+  final String name;
+  final int amount;
+
+  @override
+  State<_WinnerCard> createState() => _WinnerCardState();
+}
+
+class _WinnerCardState extends State<_WinnerCard> {
+  static final Map<String, String> _gameCache = {};
+  String? _game;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadGame();
+  }
+
+  @override
+  void didUpdateWidget(covariant _WinnerCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.winnerId != widget.winnerId) {
+      _loadGame();
+    }
+  }
+
+  Future<void> _loadGame() async {
+    if (_gameCache.containsKey(widget.winnerId)) {
+      if (mounted) {
+        setState(() {
+          _game = _gameCache[widget.winnerId];
+        });
+      }
+      return;
+    }
+
+    try {
+      final snap = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(widget.winnerId)
+          .get();
+      final data = snap.data();
+      final game = (data?['game'] as String?)?.trim() ?? '';
+      _gameCache[widget.winnerId] = game;
+      if (mounted) {
+        setState(() {
+          _game = game;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _game = '';
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final gameLabel = _game ?? '';
+
+    return Container(
+      margin: const EdgeInsets.only(right: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        color: isDark ? cardBackground : Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: primaryColor.withValues(alpha: 0.08),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: const Color(0xFF39D98A).withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.emoji_events_rounded,
+              color: Color(0xFF39D98A),
+              size: 14,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            widget.name,
+            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+          ),
+          const SizedBox(width: 4),
+          Text(
+            'won',
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+              fontSize: 12,
+            ),
+          ),
+          const SizedBox(width: 4),
+          Text(
+            '+${widget.amount} coins',
+            style: const TextStyle(
+              color: Color(0xFF39D98A),
+              fontWeight: FontWeight.w900,
+              fontSize: 13,
+            ),
+          ),
+          if (gameLabel.isNotEmpty) ...[
+            const SizedBox(width: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: primaryColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                gameLabel,
+                style: const TextStyle(
+                  color: primaryColor,
+                  fontSize: 9,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _DailyQuestsSection extends StatelessWidget {
+  const _DailyQuestsSection({required this.userData});
+
+  final Map<String, dynamic>? userData;
+
+  bool _isClaimedToday(dynamic value) {
+    if (value is! Timestamp) return false;
+    final date = value.toDate();
+    final now = DateTime.now();
+    return date.year == now.year &&
+        date.month == now.month &&
+        date.day == now.day;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final dailyClaimed = _isClaimedToday(userData?['lastOpenRewardAt']);
+    final adClaimed = _isClaimedToday(userData?['lastAdRewardAt']);
+    final checkInClaimed = _isClaimedToday(userData?['lastCheckInAt']);
+
+    final quests = [
+      _QuestItem(
+        title: 'Daily Open Reward',
+        reward: 20,
+        isCompleted: dailyClaimed,
+        icon: Icons.card_giftcard_rounded,
+      ),
+      _QuestItem(
+        title: 'Watch Ad Reward',
+        reward: 20,
+        isCompleted: adClaimed,
+        icon: Icons.ondemand_video_rounded,
+      ),
+      _QuestItem(
+        title: 'Streak Check-In',
+        reward: 50,
+        isCompleted: checkInClaimed,
+        icon: Icons.local_fire_department_rounded,
+      ),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Daily Quests',
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
+        ),
+        const SizedBox(height: 14),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: isDark ? cardBackground : Colors.grey.shade100,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: primaryColor.withValues(alpha: 0.1),
+            ),
+          ),
+          child: Column(
+            children: [
+              for (var i = 0; i < quests.length; i++) ...[
+                Row(
+                  children: [
+                    Container(
+                      height: 38,
+                      width: 38,
+                      decoration: BoxDecoration(
+                        color: quests[i].isCompleted
+                            ? const Color(0xFF39D98A).withValues(alpha: 0.12)
+                            : primaryColor.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(
+                        quests[i].icon,
+                        color: quests[i].isCompleted ? const Color(0xFF39D98A) : primaryColor,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            quests[i].title,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 14,
+                              decoration: quests[i].isCompleted
+                                  ? TextDecoration.lineThrough
+                                  : null,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '+${quests[i].reward} coins',
+                            style: const TextStyle(
+                              color: Color(0xFF39D98A),
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(
+                      quests[i].isCompleted
+                          ? Icons.check_circle_rounded
+                          : Icons.radio_button_unchecked_rounded,
+                      color: quests[i].isCompleted ? const Color(0xFF39D98A) : Colors.grey,
+                      size: 22,
+                    ),
+                  ],
+                ),
+                if (i != quests.length - 1) ...[
+                  const SizedBox(height: 12),
+                  Divider(
+                    height: 1,
+                    color: primaryColor.withValues(alpha: 0.08),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _QuestItem {
+  const _QuestItem({
+    required this.title,
+    required this.reward,
+    required this.isCompleted,
+    required this.icon,
+  });
+
+  final String title;
+  final int reward;
+  final bool isCompleted;
+  final IconData icon;
+}
+
+class _CommunityBanner extends StatelessWidget {
+  const _CommunityBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(26),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFF229ED9),
+            Color(0xFF0088CC),
+            Color(0xFF005580),
+          ],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF0088CC).withValues(alpha: 0.32),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            right: -20,
+            bottom: -30,
+            child: Transform.rotate(
+              angle: -0.2,
+              child: Icon(
+                Icons.send_rounded,
+                size: 130,
+                color: Colors.white.withValues(alpha: 0.09),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.18),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: const Text(
+                          'COMMUNITY',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w900,
+                            fontSize: 10,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      const Text(
+                        'Join Telegram!',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 20,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Get instant winner announcements, daily updates & match reminders.',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.86),
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 16),
+                ElevatedButton(
+                  onPressed: () async {
+                    final uri = Uri.parse('https://t.me/duelxzone');
+                    try {
+                      final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+                      if (!launched && context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Could not open invite link')),
+                        );
+                      }
+                    } catch (_) {}
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: const Color(0xFF0088CC),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.send_rounded, size: 18),
+                      SizedBox(width: 6),
+                      Text(
+                        'Join',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _TournamentActionSection extends StatelessWidget {
   const _TournamentActionSection();
 
@@ -937,15 +1456,13 @@ class _TournamentActionSection extends StatelessWidget {
       stream: TournamentService.joinActionStream(),
       builder: (context, snapshot) {
         final action = snapshot.data;
-        if (action == null) return const SizedBox(height: 32);
+        if (action == null) return const SizedBox.shrink();
 
-        return Padding(
-          padding: const EdgeInsets.only(top: 22, bottom: 26),
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(22),
-              color: Theme.of(context).brightness == Brightness.dark
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(22),
+            color: Theme.of(context).brightness == Brightness.dark
                 ? cardBackground
                 : Colors.grey.shade100,
             border: Border.all(color: primaryColor.withValues(alpha: 0.12)),
@@ -969,8 +1486,8 @@ class _TournamentActionSection extends StatelessWidget {
                     Text(
                       action.title,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
+                            fontWeight: FontWeight.w800,
+                          ),
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -1002,9 +1519,9 @@ class _TournamentActionSection extends StatelessWidget {
               ),
             ],
           ),
-          ),
         );
       },
     );
   }
 }
+
