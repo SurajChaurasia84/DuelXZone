@@ -147,7 +147,7 @@ class _BattleRoomScreenState extends State<BattleRoomScreen> {
                         : () async {
                             try {
                               await BattleService.startBattle(widget.battleId);
-                              if (!mounted) return;
+                              if (!context.mounted) return;
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   behavior: SnackBarBehavior.floating,
@@ -160,7 +160,7 @@ class _BattleRoomScreenState extends State<BattleRoomScreen> {
                                 ),
                               );
                             } catch (e) {
-                              if (!mounted) return;
+                              if (!context.mounted) return;
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   behavior: SnackBarBehavior.floating,
