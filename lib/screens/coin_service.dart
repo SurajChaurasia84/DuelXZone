@@ -1,7 +1,9 @@
+import 'dart:convert';
 import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class CoinService {
   static const int signupBonus = 500;
@@ -266,6 +268,29 @@ class CoinService {
     normalized['checkInStreak'] = stillActive ? streak : 0;
     return normalized;
   }
+
+  static const _historyCacheKey = 'coin_history_cache';
+
+  static Future<List<CoinHistoryEntry>> loadLocalHistory() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final jsonStr = prefs.getString(_historyCacheKey);
+      if (jsonStr == null || jsonStr.isEmpty) return [];
+
+      final list = json.decode(jsonStr) as List<dynamic>;
+      return list.map((item) => CoinHistoryEntry.fromMap(Map<String, dynamic>.from(item))).toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  static Future<void> saveLocalHistory(List<CoinHistoryEntry> entries) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final list = entries.map((e) => e.toMap()).toList();
+      await prefs.setString(_historyCacheKey, json.encode(list));
+    } catch (_) {}
+  }
 }
 
 class CoinHistoryEntry {
@@ -277,12 +302,28 @@ class CoinHistoryEntry {
   });
 
   factory CoinHistoryEntry.fromMap(Map<String, dynamic> map) {
+    DateTime? createdAtDate;
+    final rawCreated = map['createdAt'];
+    if (rawCreated is Timestamp) {
+      createdAtDate = rawCreated.toDate();
+    } else if (rawCreated is String) {
+      createdAtDate = DateTime.tryParse(rawCreated);
+    }
     return CoinHistoryEntry(
       amount: (map['amount'] as num?)?.toInt() ?? 0,
       title: (map['title'] as String?) ?? 'Coin update',
       type: (map['type'] as String?) ?? 'reward',
-      createdAt: (map['createdAt'] as Timestamp?)?.toDate(),
+      createdAt: createdAtDate,
     );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'amount': amount,
+      'title': title,
+      'type': type,
+      'createdAt': createdAt?.toIso8601String(),
+    };
   }
 
   final int amount;
