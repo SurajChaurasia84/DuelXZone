@@ -82,15 +82,27 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         'photo': user.photoURL ?? '',
       };
       if (snapshot.exists) {
-        await ref.set({
-          ...basic,
-          'coins': snapshot.data()?['coins'] ?? 0,
-        }, SetOptions(merge: true));
+        final data = snapshot.data();
+        if (data == null || data['referralCode'] == null) {
+          final referralCode = await CoinService.generateUniqueReferralCode();
+          await ref.set({
+            ...basic,
+            'coins': data?['coins'] ?? 0,
+            'referralCode': referralCode,
+          }, SetOptions(merge: true));
+        } else {
+          await ref.set({
+            ...basic,
+            'coins': data['coins'] ?? 0,
+          }, SetOptions(merge: true));
+        }
       } else {
+        final referralCode = await CoinService.generateUniqueReferralCode();
         await ref.set({
           ...basic,
           'coins': CoinService.signupBonus,
           'signupBonusPending': true,
+          'referralCode': referralCode,
           'createdAt': FieldValue.serverTimestamp(),
         });
       }
