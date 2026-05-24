@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'coin_service.dart';
+import 'coins_screen.dart';
 import 'screen_constants.dart';
 
 class CoinBadge extends StatelessWidget {
@@ -12,8 +13,19 @@ class CoinBadge extends StatelessWidget {
       builder: (context, snapshot) {
         final coins = snapshot.data ?? 0;
 
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        return GestureDetector(
+          onTap: () {
+            final isOnCoinsScreen = context.findAncestorWidgetOfExactType<CoinsScreen>() != null;
+            if (!isOnCoinsScreen) {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const CoinsScreen(),
+                ),
+              );
+            }
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
             color: Theme.of(context).brightness == Brightness.dark
                 ? Colors.white.withValues(alpha: 0.08)
@@ -38,8 +50,9 @@ class CoinBadge extends StatelessWidget {
               ),
             ],
           ),
-        );
-      },
-    );
-  }
+        ),
+      );
+    },
+  );
+}
 }
