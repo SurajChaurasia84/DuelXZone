@@ -210,6 +210,10 @@ class _HomeScreenState extends State<HomeScreen> {
             if (data != null) {
               UserCacheService.save(data);
             }
+            final mergedUserData = <String, dynamic>{
+              ...cached,
+              if (data != null) ...data,
+            };
             if (data?['signupBonusPending'] == true) {
               _showSignupBonus();
             }
@@ -276,7 +280,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     },
                   ),
                   const SizedBox(height: 22),
-                  _DailyQuestsSection(userData: data),
+                  _DailyQuestsSection(userData: mergedUserData),
                   const _TournamentActionSection(),
                   const SizedBox(height: 14),
                   Text(
@@ -1180,8 +1184,14 @@ class _DailyQuestsSection extends StatelessWidget {
   final Map<String, dynamic>? userData;
 
   bool _isClaimedToday(dynamic value) {
-    if (value is! Timestamp) return false;
-    final date = value.toDate();
+    if (value == null) return false;
+    DateTime? date;
+    if (value is Timestamp) {
+      date = value.toDate();
+    } else if (value is String) {
+      date = DateTime.tryParse(value);
+    }
+    if (date == null) return false;
     final now = DateTime.now();
     return date.year == now.year &&
         date.month == now.month &&
