@@ -44,6 +44,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   bool _isSaving = false;
   bool _isAgeConfirmed = false;
   String? _errorText;
+  String? _usernameError;
 
   @override
   void initState() {
@@ -185,17 +186,26 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       return;
     }
     if (!_usernamePattern.hasMatch(username)) {
-      setState(
-        () => _errorText =
-            'Username must start with a letter and use only lowercase letters, numbers, _ or .',
-      );
+      setState(() => _usernameError = 'Start with a letter. Use lowercase, numbers, _ or .');
       return;
     }
     setState(() {
       _isSaving = true;
       _errorText = null;
+      _usernameError = null;
     });
     try {
+      final query = await FirebaseFirestore.instance
+          .collection('users')
+          .where('username', isEqualTo: username)
+          .limit(1)
+          .get();
+
+      if (query.docs.isNotEmpty && query.docs.first.id != user.uid) {
+        setState(() => _usernameError = 'Username is already taken');
+        return;
+      }
+
       await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
         'username': username,
       }, SetOptions(merge: true));
@@ -206,7 +216,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       widget.onCompleted();
     } on FirebaseException catch (e) {
       if (!mounted) return;
-      setState(() => _errorText = _firebaseMessage(e, 'Unable to finish onboarding.'));
+      if (e.code == 'permission-denied') {
+        setState(() => _usernameError = 'Permission denied. Allow read in Firestore rules.');
+      } else {
+        setState(() => _errorText = _firebaseMessage(e, 'Unable to finish onboarding.'));
+      }
     } catch (_) {
       if (!mounted) return;
       setState(() => _errorText = 'Unable to finish onboarding.');
@@ -588,11 +602,17 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         TextField(
           controller: _usernameController,
           textInputAction: TextInputAction.done,
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             labelText: 'Username',
-            prefixIcon: Icon(Icons.person_outline),
+            prefixIcon: const Icon(Icons.person_outline),
             helperText: 'Start with a letter. Use lowercase letters, numbers, _ or .',
+            errorText: _usernameError,
           ),
+          onChanged: (value) {
+            if (_usernameError != null) {
+              setState(() => _usernameError = null);
+            }
+          },
         ),
         const SizedBox(height: 22),
         Row(
