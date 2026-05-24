@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -12,7 +11,6 @@ class CoinService {
   static const int checkInGoalDays = 7;
   static const int checkInGoalReward = 50;
 
-  static final Random _random = Random();
 
   static DocumentReference<Map<String, dynamic>>? get _userRef {
     final user = FirebaseAuth.instance.currentUser;
