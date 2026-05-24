@@ -4,11 +4,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 
-enum TournamentProofType {
-  screenshot,
-  recording,
-}
-
 class TournamentJoinAction {
   const TournamentJoinAction({
     required this.title,
@@ -239,7 +234,6 @@ class TournamentService {
     required int battleNumber,
     required String roomId,
     required File file,
-    required TournamentProofType type,
   }) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
@@ -305,17 +299,13 @@ class TournamentService {
         .child(cycleId)
         .child(user.uid)
         .child('battle$battleNumber')
-        .child('${type.name}.$extension');
+        .child('screenshot.$extension');
 
     await storageRef.putFile(file);
     final downloadUrl = await storageRef.getDownloadURL();
 
-    final fieldName = type == TournamentProofType.screenshot
-        ? 'battle$battleNumber.screenshotUrl'
-        : 'battle$battleNumber.recordingUrl';
-    final roomFieldName = type == TournamentProofType.screenshot
-        ? 'players.${user.uid}.screenshotUrl'
-        : 'players.${user.uid}.recordingUrl';
+    final fieldName = 'battle$battleNumber.screenshotUrl';
+    final roomFieldName = 'players.${user.uid}.screenshotUrl';
 
     await _firestore
         .collection('tournament_registrations')
@@ -380,7 +370,6 @@ class TournamentService {
       'battleNumber': battleNumber,
       'matchId': null,
       'screenshotUrl': null,
-      'recordingUrl': null,
       'submittedAt': null,
     };
   }
@@ -450,7 +439,6 @@ class TournamentService {
       'name': (participantData['name'] as String?) ?? 'Player',
       'photo': (participantData['photo'] as String?) ?? '',
       'screenshotUrl': null,
-      'recordingUrl': null,
       'submittedAt': null,
     };
   }
