@@ -7,6 +7,7 @@ import 'battle_room_screen.dart';
 import 'battle_service.dart';
 import 'battles_screen.dart';
 import 'coin_badge.dart';
+import 'coins_screen.dart';
 import 'edit_profile_screen.dart';
 import 'leaderboard_screen.dart';
 import 'screen_constants.dart';
@@ -1242,81 +1243,90 @@ class _DailyQuestsSection extends StatelessWidget {
               ),
         ),
         const SizedBox(height: 14),
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: isDark ? cardBackground : Colors.grey.shade100,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: primaryColor.withValues(alpha: 0.1),
+        GestureDetector(
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const CoinsScreen(),
+              ),
+            );
+          },
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: isDark ? cardBackground : Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: primaryColor.withValues(alpha: 0.1),
+              ),
             ),
-          ),
-          child: Column(
-            children: [
-              for (var i = 0; i < quests.length; i++) ...[
-                Row(
-                  children: [
-                    Container(
-                      height: 38,
-                      width: 38,
-                      decoration: BoxDecoration(
-                        color: quests[i].isCompleted
-                            ? const Color(0xFF39D98A).withValues(alpha: 0.12)
-                            : primaryColor.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(10),
+            child: Column(
+              children: [
+                for (var i = 0; i < quests.length; i++) ...[
+                  Row(
+                    children: [
+                      Container(
+                        height: 38,
+                        width: 38,
+                        decoration: BoxDecoration(
+                          color: quests[i].isCompleted
+                              ? const Color(0xFF39D98A).withValues(alpha: 0.12)
+                              : primaryColor.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(
+                          quests[i].icon,
+                          color: quests[i].isCompleted ? const Color(0xFF39D98A) : primaryColor,
+                          size: 20,
+                        ),
                       ),
-                      child: Icon(
-                        quests[i].icon,
-                        color: quests[i].isCompleted ? const Color(0xFF39D98A) : primaryColor,
-                        size: 20,
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            quests[i].title,
-                            style: TextStyle(
-                              fontWeight: FontWeight.w800,
-                              fontSize: 14,
-                              decoration: quests[i].isCompleted
-                                  ? TextDecoration.lineThrough
-                                  : null,
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              quests[i].title,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w800,
+                                fontSize: 14,
+                                decoration: quests[i].isCompleted
+                                    ? TextDecoration.lineThrough
+                                    : null,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '+${quests[i].reward} coins',
-                            style: const TextStyle(
-                              color: Color(0xFF39D98A),
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12,
+                            const SizedBox(height: 4),
+                            Text(
+                              '+${quests[i].reward} coins',
+                              style: const TextStyle(
+                                color: Color(0xFF39D98A),
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                    Icon(
-                      quests[i].isCompleted
-                          ? Icons.check_circle_rounded
-                          : Icons.radio_button_unchecked_rounded,
-                      color: quests[i].isCompleted ? const Color(0xFF39D98A) : Colors.grey,
-                      size: 22,
-                    ),
-                  ],
-                ),
-                if (i != quests.length - 1) ...[
-                  const SizedBox(height: 12),
-                  Divider(
-                    height: 1,
-                    color: primaryColor.withValues(alpha: 0.08),
+                      Icon(
+                        quests[i].isCompleted
+                            ? Icons.check_circle_rounded
+                            : Icons.radio_button_unchecked_rounded,
+                        color: quests[i].isCompleted ? const Color(0xFF39D98A) : Colors.grey,
+                        size: 22,
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 12),
+                  if (i != quests.length - 1) ...[
+                    const SizedBox(height: 12),
+                    Divider(
+                      height: 1,
+                      color: primaryColor.withValues(alpha: 0.08),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
                 ],
               ],
-            ],
+            ),
           ),
         ),
       ],
