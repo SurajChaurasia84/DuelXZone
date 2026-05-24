@@ -270,11 +270,33 @@ class _TournamentTabState extends State<_TournamentTab> {
                   children: [
                     const _SoloOnlyBanner(),
                     const SizedBox(height: 16),
-                    _HeaderCard(
-                      title: widget.title,
-                      subtitle: widget.subtitle,
-                      entryFee: widget.entryFee,
-                      isMega: widget.isMega,
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(18),
+                      child: AspectRatio(
+                        aspectRatio: 16 / 5,
+                        child: Image.asset(
+                          switch (widget.kind) {
+                            _TournamentKind.daily => 'assets/daily.png',
+                            _TournamentKind.weekly => 'assets/weekly.png',
+                            _TournamentKind.mega => 'assets/mega.png',
+                          },
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              color: primaryColor.withValues(alpha: 0.12),
+                              child: Center(
+                                child: Text(
+                                  widget.title,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 16),
                     _CountdownCard(
@@ -630,115 +652,6 @@ class _RewardProduct {
   final String amazonUrl;
 }
 
-class _HeaderCard extends StatelessWidget {
-  const _HeaderCard({
-    required this.title,
-    required this.subtitle,
-    required this.entryFee,
-    required this.isMega,
-  });
-
-  final String title;
-  final String subtitle;
-  final int entryFee;
-  final bool isMega;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(28),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: isMega
-              ? const [Color(0xFFFFC14D), Color(0xFFFF7A18), Color(0xFF8A2D00)]
-              : const [Color(0xFFFF6A38), primaryColor, Color(0xFF8F2A0A)],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: isMega ? const Color(0x66FFC14D) : const Color(0x55FF4B11),
-            blurRadius: 24,
-            offset: const Offset(0, 12),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (isMega)
-                  Container(
-                    margin: const EdgeInsets.only(bottom: 10),
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.16),
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: const Text(
-                      'EVERY 15 DAYS',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 11,
-                        letterSpacing: 0.7,
-                      ),
-                    ),
-                  ),
-                Text(
-                  title,
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w900,
-                      ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  subtitle,
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: Colors.white.withValues(alpha: 0.9),
-                      ),
-                ),
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.14),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Text(
-                    'Entry Fee: $entryFee coins',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 16),
-          Container(
-            height: 74,
-            width: 74,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.14),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              isMega ? Icons.rocket_launch_rounded : Icons.emoji_events_rounded,
-              color: Colors.white,
-              size: 34,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 class _MegaRewardPreview extends StatelessWidget {
   const _MegaRewardPreview();
