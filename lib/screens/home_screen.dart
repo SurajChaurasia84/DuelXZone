@@ -147,22 +147,28 @@ class _HomeScreenState extends State<HomeScreen> {
         );
 
         if (openRoom == true && mounted) {
-          await Navigator.of(context).push(
+          final result = await Navigator.of(context).push<dynamic>(
             MaterialPageRoute(
               builder: (_) => BattleRoomScreen(battleId: existingBattleId),
             ),
           );
+          if (result == 're-search' && mounted) {
+            _startBattle(entryFee);
+          }
         }
         return;
       }
 
       final battleId = await BattleService.createOrJoinBattle(entryFee: entryFee);
       if (!mounted) return;
-      await Navigator.of(context).push(
+      final result = await Navigator.of(context).push<dynamic>(
         MaterialPageRoute(
           builder: (_) => BattleRoomScreen(battleId: battleId),
         ),
       );
+      if (result == 're-search' && mounted) {
+        _startBattle(entryFee);
+      }
     } on FirebaseException catch (e) {
       if (!mounted) return;
       final message = switch (e.code) {
