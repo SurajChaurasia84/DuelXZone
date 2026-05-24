@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'coin_badge.dart';
 import 'coin_service.dart';
 import 'screen_constants.dart';
+import 'user_cache_service.dart';
 
 class CoinsScreen extends StatelessWidget {
   const CoinsScreen({super.key});
@@ -169,6 +170,17 @@ class CoinsScreen extends StatelessWidget {
   }) async {
     try {
       final amount = await action();
+
+      // Update local storage user cache immediately
+      final nowStr = DateTime.now().toIso8601String();
+      if (successPrefix.toLowerCase().contains('daily')) {
+        await UserCacheService.saveSingle('lastOpenRewardAt', nowStr);
+      } else if (successPrefix.toLowerCase().contains('ad')) {
+        await UserCacheService.saveSingle('lastAdRewardAt', nowStr);
+      } else if (successPrefix.toLowerCase().contains('check-in')) {
+        await UserCacheService.saveSingle('lastCheckInAt', nowStr);
+      }
+
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
