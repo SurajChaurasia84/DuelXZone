@@ -138,50 +138,23 @@ class _TournamentMatchesScreenState extends State<TournamentMatchesScreen> {
     required int battleNumber,
     required String roomId,
   }) async {
-    setState(() {
-      _uploadBattle = battleNumber;
-    });
-
-    try {
-      final result = await FilePicker.pickFiles(
-        type: FileType.image,
-      );
-      final path = result?.files.single.path;
-      if (path == null) return;
-
-      await TournamentService.uploadBattleProof(
-        cycleId: widget.cycleId,
-        battleNumber: battleNumber,
-        roomId: roomId,
-        file: File(path),
-      );
-
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: primaryColor,
-          content: Text('Battle $battleNumber screenshot uploaded'),
-        ),
-      );
-    } on FirebaseException catch (e) {
-      if (!mounted) return;
-      final message = switch (e.code) {
-        'window-closed' => 'Upload window closed for this battle.',
-        'not-in-room' => 'Join the battle room first.',
-        'not-registered' => 'Only registered players can upload proofs.',
-        _ => e.message ?? 'Unable to upload right now.',
-      };
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(behavior: SnackBarBehavior.floating, content: Text(message)),
-      );
-    } finally {
-      if (mounted) {
-        setState(() {
-          _uploadBattle = null;
-        });
-      }
-    }
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _SubmitResultSheet(
+        onSubmit: (file, kills, rank) async {
+          await TournamentService.uploadBattleProof(
+            cycleId: widget.cycleId,
+            battleNumber: battleNumber,
+            roomId: roomId,
+            file: file,
+            kills: kills,
+            rank: rank,
+          );
+        },
+      ),
+    );
   }
 }
 
@@ -469,6 +442,241 @@ class _UploadRow extends StatelessWidget {
               : Text(done ? 'Done' : 'Upload'),
         ),
       ],
+    );
+  }
+}
+
+class _SubmitResultSheet extends StatefulWidget {
+  const _SubmitResultSheet({required this.onSubmit});
+
+  final Future<void> Function(File file, int kills, String rank) onSubmit;
+
+  @override
+  State<_SubmitResultSheet> createState() => _SubmitResultSheetState();
+}
+
+class _SubmitResultSheetState extends State<_SubmitResultSheet> {
+  final _killsController = TextEditingController();
+  String? _selectedRank;
+  String? _imagePath;
+  bool _submitting = false;
+
+  @override
+  void dispose() {
+    _killsController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickImage() async {
+    final result = await FilePicker.pickFiles(type: FileType.image);
+    final path = result?.files.single.path;
+    if (path == null) return;
+    setState(() => _imagePath = path);
+  }
+
+  Future<void> _handleSubmit() async {
+    if (_imagePath == null) {
+      _showMessage('Please select a screenshot proof.');
+      return;
+    }
+    final kills = int.tryParse(_killsController.text.trim());
+    if (kills == null || kills < 0) {
+      _showMessage('Please enter a valid kills count.');
+      return;
+    }
+    if (_selectedRank == null) {
+      _showMessage('Please select your rank.');
+      return;
+    }
+
+    setState(() => _submitting = true);
+    try {
+      await widget.onSubmit(File(_imagePath!), kills, _selectedRank!);
+      if (!mounted) return;
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: primaryColor,
+          content: Text('Result submitted successfully'),
+        ),
+      );
+    } catch (e) {
+      _showMessage('$e');
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
+
+  void _showMessage(String text) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        behavior: SnackBarBehavior.floating,
+        content: Text(text),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+
+    return Container(
+      padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + bottomInset),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF16161C) : Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Align(
+              alignment: Alignment.center,
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Submit Result',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w900,
+                  ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Enter your match results below. Screenshot proof is mandatory.',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                  ),
+            ),
+            const SizedBox(height: 20),
+            // Screenshot picker
+            Text(
+              'Screenshot Proof',
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: _submitting ? null : _pickImage,
+                icon: Icon(_imagePath == null ? Icons.image_outlined : Icons.check_circle_outline_rounded),
+                label: Text(_imagePath == null ? 'Select Screenshot' : 'Screenshot Added'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: _imagePath == null ? primaryColor : Colors.green,
+                  side: BorderSide(
+                    color: _imagePath == null ? primaryColor.withValues(alpha: 0.3) : Colors.green.withValues(alpha: 0.5),
+                  ),
+                ),
+              ),
+            ),
+            if (_imagePath != null) ...[
+              const SizedBox(height: 4),
+              Text(
+                'Selected: ${_imagePath!.split(Platform.pathSeparator).last}',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Colors.green,
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
+            ],
+            const SizedBox(height: 16),
+            // Kills
+            TextField(
+              controller: _killsController,
+              enabled: !_submitting,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: 'Kills',
+                hintText: 'Enter number of kills',
+              ),
+            ),
+            const SizedBox(height: 16),
+            // Rank dropdown
+            DropdownButtonFormField<String>(
+              initialValue: _selectedRank,
+              onChanged: _submitting ? null : (val) => setState(() => _selectedRank = val),
+              decoration: const InputDecoration(
+                labelText: 'Rank',
+                hintText: 'Select your rank',
+              ),
+              items: const [
+                DropdownMenuItem(value: '1', child: Text('1')),
+                DropdownMenuItem(value: '2-5', child: Text('2-5')),
+                DropdownMenuItem(value: '6-10', child: Text('6-10')),
+                DropdownMenuItem(value: '11-20', child: Text('11-20')),
+                DropdownMenuItem(value: '21+', child: Text('21+')),
+              ],
+            ),
+            const SizedBox(height: 24),
+            // Warning warning
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.amber.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.warning_amber_rounded, color: Colors.amber),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Once submitted, results cannot be modified or resubmitted.',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: isDark ? Colors.amber.shade200 : Colors.amber.shade900,
+                            fontWeight: FontWeight.w600,
+                          ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            // Submit button
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: _submitting ? null : _handleSubmit,
+                style: FilledButton.styleFrom(
+                  backgroundColor: primaryColor,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                child: _submitting
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Text(
+                        'Submit Result',
+                        style: TextStyle(fontWeight: FontWeight.w800),
+                      ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
