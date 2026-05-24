@@ -84,14 +84,68 @@ class CoinsScreen extends StatelessWidget {
                         ),
               ),
               const SizedBox(height: 24),
-              Text(
-                'Coin History',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
+              StreamBuilder<List<CoinHistoryEntry>>(
+                stream: CoinService.historyStream(),
+                builder: (context, snapshot) {
+                  final items = snapshot.data ?? const <CoinHistoryEntry>[];
+                  final hasMore = items.length > 5;
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Coin History',
+                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                ),
+                          ),
+                          if (hasMore)
+                            TextButton(
+                              onPressed: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => const AllCoinHistoryScreen(),
+                                  ),
+                                );
+                              },
+                              style: TextButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(horizontal: 8),
+                              ),
+                              child: const Text(
+                                'See All',
+                                style: TextStyle(
+                                  color: primaryColor,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      if (items.isEmpty)
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(18),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(22),
+                            color: Theme.of(context).brightness == Brightness.dark
+                                ? cardBackground
+                                : Colors.grey.shade100,
+                          ),
+                          child: const Text('No coin history yet'),
+                        )
+                      else
+                        ...items.take(5).map((item) => Padding(
+                              padding: const EdgeInsets.only(bottom: 10),
+                              child: _HistoryTile(item: item),
+                            )),
+                    ],
+                  );
+                },
               ),
-              const SizedBox(height: 14),
-              const _CoinHistorySection(),
             ],
           ),
         );
@@ -312,37 +366,37 @@ class _RewardActionCard extends StatelessWidget {
   }
 }
 
-class _CoinHistorySection extends StatelessWidget {
-  const _CoinHistorySection();
+class AllCoinHistoryScreen extends StatelessWidget {
+  const AllCoinHistoryScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<List<CoinHistoryEntry>>(
-      stream: CoinService.historyStream(),
-      builder: (context, snapshot) {
-        final items = snapshot.data ?? const <CoinHistoryEntry>[];
-        if (items.isEmpty) {
-          return Container(
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(22),
-              color: Theme.of(context).brightness == Brightness.dark
-                  ? cardBackground
-                  : Colors.grey.shade100,
-            ),
-            child: const Text('No coin history yet'),
-          );
-        }
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Coin History'),
+        centerTitle: true,
+      ),
+      body: StreamBuilder<List<CoinHistoryEntry>>(
+        stream: CoinService.historyStream(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          final items = snapshot.data ?? const <CoinHistoryEntry>[];
+          if (items.isEmpty) {
+            return const Center(child: Text('No coin history yet'));
+          }
 
-        return Column(
-          children: [
-            for (final item in items) ...[
-              _HistoryTile(item: item),
-              const SizedBox(height: 10),
-            ],
-          ],
-        );
-      },
+          return ListView.separated(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
+            itemCount: items.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 10),
+            itemBuilder: (context, index) {
+              return _HistoryTile(item: items[index]);
+            },
+          );
+        },
+      ),
     );
   }
 }
