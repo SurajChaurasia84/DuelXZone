@@ -23,7 +23,6 @@ class BattleRoomScreen extends StatefulWidget {
 
 class _BattleRoomScreenState extends State<BattleRoomScreen> {
   bool _uploadingScreenshot = false;
-  bool _uploadingRecording = false;
   Timer? _resolveTimer;
 
   @override
@@ -83,7 +82,6 @@ class _BattleRoomScreenState extends State<BattleRoomScreen> {
             : null;
         final timeLeft = expiresAt == null ? Duration.zero : expiresAt.difference(DateTime.now());
         final screenshotDone = (me['screenshotUrl'] as String?)?.isNotEmpty == true;
-        final recordingDone = (me['recordingUrl'] as String?)?.isNotEmpty == true;
         final canUpload =
             status == 'ongoing' || status == 'pending_admin' || status == 'review';
         final canExitRoom = status == 'waiting' || status == 'matched';
@@ -121,7 +119,7 @@ class _BattleRoomScreenState extends State<BattleRoomScreen> {
                     ? me['name'] as String
                     : 'Player',
                 photoUrl: me['photo'] as String?,
-                isReady: screenshotDone && recordingDone,
+                isReady: screenshotDone,
                 started: iStarted,
               ),
               const SizedBox(height: 12),
@@ -133,8 +131,7 @@ class _BattleRoomScreenState extends State<BattleRoomScreen> {
                         ? opponent['name'] as String
                         : 'Player'),
                 photoUrl: opponent['photo'] as String?,
-                isReady: (opponent['screenshotUrl'] as String?)?.isNotEmpty == true &&
-                    (opponent['recordingUrl'] as String?)?.isNotEmpty == true,
+                isReady: (opponent['screenshotUrl'] as String?)?.isNotEmpty == true,
                 started: opponentId != null && startedPlayerIds.contains(opponentId),
               ),
               if (status == 'matched') ...[
@@ -201,22 +198,7 @@ class _BattleRoomScreenState extends State<BattleRoomScreen> {
                 done: screenshotDone,
                 onTap: screenshotDone || !canUpload || status == 'completed'
                     ? null
-                    : () => _pickAndUpload(BattleProofType.screenshot),
-              ),
-              const SizedBox(height: 12),
-              _UploadCard(
-                title: 'Upload Recording',
-                subtitle: recordingDone
-                    ? 'Uploaded'
-                    : canUpload
-                        ? 'Pick your recording proof'
-                        : 'Uploads unlock after both players start',
-                icon: Icons.videocam_rounded,
-                loading: _uploadingRecording,
-                done: recordingDone,
-                onTap: recordingDone || !canUpload || status == 'completed'
-                    ? null
-                    : () => _pickAndUpload(BattleProofType.recording),
+                    : _pickAndUpload,
               ),
             ],
           ),
@@ -294,18 +276,14 @@ class _BattleRoomScreenState extends State<BattleRoomScreen> {
     }
   }
 
-  Future<void> _pickAndUpload(BattleProofType type) async {
+  Future<void> _pickAndUpload() async {
     setState(() {
-      if (type == BattleProofType.screenshot) {
-        _uploadingScreenshot = true;
-      } else {
-        _uploadingRecording = true;
-      }
+      _uploadingScreenshot = true;
     });
 
     try {
       final result = await FilePicker.pickFiles(
-        type: type == BattleProofType.screenshot ? FileType.image : FileType.video,
+        type: FileType.image,
       );
       final path = result?.files.single.path;
       if (path == null) return;
@@ -313,7 +291,6 @@ class _BattleRoomScreenState extends State<BattleRoomScreen> {
       await BattleService.uploadBattleProof(
         battleId: widget.battleId,
         file: File(path),
-        type: type,
       );
 
       if (!mounted) return;
@@ -321,11 +298,7 @@ class _BattleRoomScreenState extends State<BattleRoomScreen> {
         SnackBar(
           behavior: SnackBarBehavior.floating,
           backgroundColor: primaryColor,
-          content: Text(
-            type == BattleProofType.screenshot
-                ? 'Screenshot uploaded'
-                : 'Recording uploaded',
-          ),
+          content: const Text('Screenshot uploaded'),
         ),
       );
     } catch (e) {
@@ -339,11 +312,7 @@ class _BattleRoomScreenState extends State<BattleRoomScreen> {
     } finally {
       if (mounted) {
         setState(() {
-          if (type == BattleProofType.screenshot) {
-            _uploadingScreenshot = false;
-          } else {
-            _uploadingRecording = false;
-          }
+          _uploadingScreenshot = false;
         });
       }
     }
