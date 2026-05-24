@@ -502,18 +502,27 @@ class _SubmitResultSheetState extends State<_SubmitResultSheet> {
         ),
       );
     } catch (e) {
-      _showMessage('$e');
+      _showMessage('$e', isError: true);
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
   }
 
-  void _showMessage(String text) {
+  void _showMessage(String text, {bool isError = false}) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         behavior: SnackBarBehavior.floating,
-        content: Text(text),
+        backgroundColor: isError ? Colors.red.shade800 : null,
+        content: Row(
+          children: [
+            if (isError) ...[
+              const Icon(Icons.error_outline_rounded, color: Colors.white),
+              const SizedBox(width: 8),
+            ],
+            Expanded(child: Text(text)),
+          ],
+        ),
       ),
     );
   }
