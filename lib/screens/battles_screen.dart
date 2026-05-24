@@ -310,7 +310,7 @@ class _TournamentTabState extends State<_TournamentTab> {
                     _InfoCard(
                       title: 'Rewards',
                       icon: Icons.workspace_premium_rounded,
-                      showBorder: false,
+                      flat: true,
                       child: widget.rewardProducts.isEmpty
                           ? const _BulletRow(text: 'Winner: 500 coins')
                           : _RewardCarousel(rewardProducts: widget.rewardProducts),
@@ -713,39 +713,43 @@ class _InfoCard extends StatelessWidget {
     required this.title,
     required this.icon,
     required this.child,
-    this.showBorder = true,
+    this.flat = false,
   });
 
   final String title;
   final IconData icon;
   final Widget child;
-  final bool showBorder;
+  final bool flat;
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: flat ? EdgeInsets.zero : const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDark ? cardBackground : Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(24),
-        border: showBorder ? Border.all(color: primaryColor.withValues(alpha: 0.1)) : null,
+        color: flat ? Colors.transparent : (isDark ? cardBackground : Colors.grey.shade100),
+        borderRadius: flat ? null : BorderRadius.circular(24),
+        border: flat ? null : Border.all(color: primaryColor.withValues(alpha: 0.1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            mainAxisAlignment: flat ? MainAxisAlignment.center : MainAxisAlignment.start,
             children: [
-              Container(
-                height: 42,
-                width: 42,
-                decoration: BoxDecoration(
-                  color: primaryColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(12),
+              if (flat)
+                Icon(icon, color: primaryColor, size: 28)
+              else
+                Container(
+                  height: 42,
+                  width: 42,
+                  decoration: BoxDecoration(
+                    color: primaryColor.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(icon, color: primaryColor),
                 ),
-                child: Icon(icon, color: primaryColor),
-              ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
               Text(
                 title,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
