@@ -28,6 +28,7 @@ class BattlesScreen extends StatelessWidget {
     'Solo Arena match only (No Duo/Squad)',
     'Single match with random players',
     'One user can participate only once per tournament',
+    'In case of a tie (equal points), the player with the higher game level is declared the winner',
   ];
   static const _weeklyRules = [
     'Entry fee: 500 coins',
@@ -38,6 +39,7 @@ class BattlesScreen extends StatelessWidget {
     'Final rank based on total points from all 3 matches',
     'Only registered players can participate on live day',
     'One user can participate only once per tournament',
+    'In case of a tie (equal points), the player with the higher game level is declared the winner',
   ];
   static const _megaRules = [
     'Entry fee: 1000 coins',
@@ -48,6 +50,7 @@ class BattlesScreen extends StatelessWidget {
     'Final rank based on total points from all 3 matches',
     'Only registered players can participate on live day',
     'One user can participate only once per tournament',
+    'In case of a tie (equal points), the player with the higher game level is declared the winner',
   ];
 
   @override
@@ -902,6 +905,7 @@ class _SoloOnlyBannerState extends State<_SoloOnlyBanner> {
                 'Coins are automatically credited after match verification.',
                 'In case of disputes, the decision of the DuelXZone team is final.',
                 'Physical rewards (for Mega/Weekly) require valid profile details.',
+                'In case of a tie (equal points), the player with the higher game level is declared the winner.',
               ],
             ),
           ],
