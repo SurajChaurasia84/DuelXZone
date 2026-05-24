@@ -2,7 +2,8 @@ import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+import 'package:cloudinary_public/cloudinary_public.dart';
+import '../services/cloudinary_service.dart';
 
 class TournamentJoinAction {
   const TournamentJoinAction({
@@ -20,7 +21,6 @@ class TournamentJoinAction {
 
 class TournamentService {
   static FirebaseFirestore get _firestore => FirebaseFirestore.instance;
-  static FirebaseStorage get _storage => FirebaseStorage.instance;
   static const Duration battleDuration = Duration(minutes: 30);
 
   static Future<void> registerForTournament({
@@ -234,6 +234,8 @@ class TournamentService {
     required int battleNumber,
     required String roomId,
     required File file,
+    required int kills,
+    required String rank,
   }) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
@@ -292,20 +294,13 @@ class TournamentService {
       );
     }
 
-    final extension = file.path.split('.').last.toLowerCase();
-    final storageRef = _storage
-        .ref()
-        .child('tournament_uploads')
-        .child(cycleId)
-        .child(user.uid)
-        .child('battle$battleNumber')
-        .child('screenshot.$extension');
+    final folder = 'tournament_uploads/$cycleId/${user.uid}/battle$battleNumber';
 
-    await storageRef.putFile(file);
-    final downloadUrl = await storageRef.getDownloadURL();
-
-    final fieldName = 'battle$battleNumber.screenshotUrl';
-    final roomFieldName = 'players.${user.uid}.screenshotUrl';
+    final downloadUrl = await CloudinaryService().uploadFile(
+      file: file,
+      folder: folder,
+      resourceType: CloudinaryResourceType.Image,
+    );
 
     await _firestore
         .collection('tournament_registrations')
@@ -313,12 +308,16 @@ class TournamentService {
         .collection('participants')
         .doc(user.uid)
         .set({
-      fieldName: downloadUrl,
+      'battle$battleNumber.screenshotUrl': downloadUrl,
+      'battle$battleNumber.kills': kills,
+      'battle$battleNumber.rank': rank,
       'battle$battleNumber.submittedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
 
     await roomRef.set({
-      roomFieldName: downloadUrl,
+      'players.${user.uid}.screenshotUrl': downloadUrl,
+      'players.${user.uid}.kills': kills,
+      'players.${user.uid}.rank': rank,
       'players.${user.uid}.submittedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
   }
