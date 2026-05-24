@@ -7,9 +7,9 @@ class CloudinaryService {
   CloudinaryService._internal();
 
   final CloudinaryPublic _cloudinary = CloudinaryPublic(
-    'dahva9bx6', // Your Cloud Name
-    'dgOpxof1', // Your Unsigned Upload Preset
-    cache: false,
+      'dahva9bx6', // Your Cloud Name
+      'dg0pxof1', // Your Unsigned Upload Preset
+      cache: false,
   );
 
   /// Uploads a file to Cloudinary and returns the secure URL.
@@ -30,7 +30,14 @@ class CloudinaryService {
       );
       return response.secureUrl;
     } catch (e) {
-      throw Exception('Cloudinary Upload Failed: $e');
+      String errorMessage = e.toString();
+      try {
+        final dynamic err = e;
+        if (err.response != null && err.response.data != null) {
+          errorMessage += ' - Response: ${err.response.data}';
+        }
+      } catch (_) {}
+      throw Exception('Cloudinary Upload Failed: $errorMessage');
     }
   }
 }
