@@ -3,14 +3,14 @@ import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+import 'package:cloudinary_public/cloudinary_public.dart';
+import '../services/cloudinary_service.dart';
 
 class BattleService {
   static const Duration roomDuration = Duration(minutes: 30);
   static final Random _random = Random();
 
   static FirebaseFirestore get _firestore => FirebaseFirestore.instance;
-  static FirebaseStorage get _storage => FirebaseStorage.instance;
 
   static CollectionReference<Map<String, dynamic>> get _battles =>
       _firestore.collection('battles');
@@ -51,9 +51,17 @@ class BattleService {
         .where('entryFee', isEqualTo: entryFee)
         .limit(10)
         .get();
-    final waitingDocs = waitingQuery.docs
-        .where((doc) => (doc.data()['createdBy'] as String?) != user.uid)
-        .toList()
+    final waitingDocs = waitingQuery.docs.where((doc) {
+      final data = doc.data();
+      if ((data['createdBy'] as String?) == user.uid) return false;
+      final createdAtRaw = data['createdAt'];
+      if (createdAtRaw == null) return false;
+      final createdAt = createdAtRaw is Timestamp
+          ? createdAtRaw.toDate()
+          : (createdAtRaw as DateTime);
+      final difference = DateTime.now().difference(createdAt).inSeconds.abs();
+      return difference <= 45;
+    }).toList()
       ..shuffle(_random);
 
     for (final doc in waitingDocs) {
@@ -455,6 +463,8 @@ class BattleService {
   static Future<void> uploadBattleProof({
     required String battleId,
     required File file,
+    required int kills,
+    required String rank,
   }) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
@@ -465,22 +475,21 @@ class BattleService {
       );
     }
 
-    final extension = file.path.split('.').last.toLowerCase();
-    final storageRef = _storage
-        .ref()
-        .child('battle_uploads')
-        .child(battleId)
-        .child(user.uid)
-        .child('screenshot.$extension');
+    final folder = 'battle_uploads/$battleId/${user.uid}';
 
-    await storageRef.putFile(file);
-    final downloadUrl = await storageRef.getDownloadURL();
+    final downloadUrl = await CloudinaryService().uploadFile(
+      file: file,
+      folder: folder,
+      resourceType: CloudinaryResourceType.Image,
+    );
     final battleRef = _battles.doc(battleId);
 
     await battleRef.set({
       'players': {
         user.uid: {
           'screenshotUrl': downloadUrl,
+          'kills': kills,
+          'rank': rank,
           'submittedAt': FieldValue.serverTimestamp(),
         },
       },
