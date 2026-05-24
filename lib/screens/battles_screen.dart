@@ -154,13 +154,13 @@ class BattlesScreen extends StatelessWidget {
               rewardProducts: [
                 _RewardProduct(
                   rankLabel: 'Rank 1',
-                  title: 'Boat earbuds',
+                  title: 'Boat Earbuds',
                   assetPath: 'assets/boat.jpg',
                   amazonUrl: 'https://amzn.to/47YUVko',
                 ),
                 _RewardProduct(
                   rankLabel: 'Rank 2',
-                  title: 'Smart watch',
+                  title: 'Smart Watch',
                   assetPath: 'assets/watch.jpg',
                   amazonUrl: 'https://amzn.to/4c1TNPn',
                 ),
@@ -303,10 +303,6 @@ class _TournamentTabState extends State<_TournamentTab> {
                       kind: _mapKind(widget.kind),
                     ),
                     const SizedBox(height: 16),
-                    if (widget.isMega) ...[
-                      const _MegaRewardPreview(),
-                      const SizedBox(height: 16),
-                    ],
                     _InfoCard(
                       title: 'Rewards',
                       icon: Icons.workspace_premium_rounded,
@@ -583,46 +579,26 @@ class _CountdownCardState extends State<_CountdownCard> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return ValueListenableBuilder<BattleSubmissionCycle>(
       valueListenable: _cycleNotifier,
       builder: (context, cycle, _) {
-        return Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(24),
-            color: isDark ? cardBackground : Colors.grey.shade100,
-            border: Border.all(color: primaryColor.withValues(alpha: 0.12)),
-          ),
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
           child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Container(
-                height: 46,
-                width: 46,
-                decoration: BoxDecoration(
-                  color: primaryColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Icon(
-                  cycle.isLiveDay ? Icons.bolt_rounded : Icons.timer_outlined,
-                  color: primaryColor,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      cycle.statusText,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w800,
-                          ),
+              Text(
+                cycle.statusText,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
                     ),
-                    const SizedBox(height: 4),
-                    Text(cycle.countdownText),
-                  ],
-                ),
+              ),
+              Text(
+                cycle.countdownText,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: primaryColor,
+                    ),
               ),
             ],
           ),
@@ -645,69 +621,6 @@ class _RewardProduct {
   final String assetPath;
   final String amazonUrl;
 }
-
-
-class _MegaRewardPreview extends StatelessWidget {
-  const _MegaRewardPreview();
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        color: isDark ? cardBackground : Colors.grey.shade100,
-        border: Border.all(color: const Color(0xFFFFC14D).withValues(alpha: 0.35)),
-      ),
-      child: Row(
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(18),
-            child: Image.asset(
-              'assets/boat.jpg',
-              height: 84,
-              width: 84,
-              fit: BoxFit.cover,
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Mega Reward Highlight',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'Rank 1 wins Boat earbuds.',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-                const SizedBox(height: 10),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-                  decoration: BoxDecoration(
-                    color: primaryColor.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: const Text(
-                    'Featured Reward',
-                    style: TextStyle(color: primaryColor, fontWeight: FontWeight.w800),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _InfoCard extends StatelessWidget {
   const _InfoCard({
     required this.title,
@@ -915,7 +828,7 @@ class _RewardCarouselState extends State<_RewardCarousel> {
     return Column(
       children: [
         SizedBox(
-          height: 180,
+          height: 96,
           child: PageView.builder(
             controller: _pageController,
             onPageChanged: (index) {
@@ -967,70 +880,50 @@ class _RewardProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final compact = constraints.maxWidth < 380;
-        return InkWell(
-          onTap: () => _openProduct(context, product.amazonUrl),
-          borderRadius: BorderRadius.circular(18),
-          child: Container(
+    return InkWell(
+      onTap: () => _openProduct(context, product.amazonUrl),
+      borderRadius: BorderRadius.circular(18),
+      child: Stack(
+        children: [
+          Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(18),
               color: primaryColor.withValues(alpha: 0.06),
               border: Border.all(color: primaryColor.withValues(alpha: 0.12)),
             ),
-            child: compact
-                ? Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(14),
-                            child: Image.asset(
-                              product.assetPath,
-                              height: 72,
-                              width: 72,
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(child: _RewardText(product: product)),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: _ViewProductButton(
-                          onTap: () => _openProduct(context, product.amazonUrl),
-                        ),
-                      ),
-                    ],
-                  )
-                : Row(
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(14),
-                        child: Image.asset(
-                          product.assetPath,
-                          height: 72,
-                          width: 72,
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(child: _RewardText(product: product)),
-                      const SizedBox(width: 10),
-                      _ViewProductButton(
-                        onTap: () => _openProduct(context, product.amazonUrl),
-                      ),
-                    ],
+            child: Row(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(14),
+                  child: Image.asset(
+                    product.assetPath,
+                    height: 72,
+                    width: 72,
+                    fit: BoxFit.cover,
                   ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 20),
+                    child: _RewardText(product: product),
+                  ),
+                ),
+              ],
+            ),
           ),
-        );
-      },
+          Positioned(
+            top: 12,
+            right: 12,
+            child: const Icon(
+              Icons.open_in_new_rounded,
+              size: 16,
+              color: primaryColor,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1079,40 +972,7 @@ class _RewardText extends StatelessWidget {
                 fontWeight: FontWeight.w800,
               ),
         ),
-        const SizedBox(height: 4),
-        Text(
-          'View product on Amazon',
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context)
-                    .colorScheme
-                    .onSurface
-                    .withValues(alpha: 0.7),
-              ),
-        ),
       ],
-    );
-  }
-}
-
-class _ViewProductButton extends StatelessWidget {
-  const _ViewProductButton({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return OutlinedButton.icon(
-      onPressed: onTap,
-      style: OutlinedButton.styleFrom(
-        foregroundColor: primaryColor,
-        side: BorderSide(color: primaryColor.withValues(alpha: 0.2)),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-      ),
-      icon: const Icon(Icons.open_in_new_rounded, size: 16),
-      label: const Text('View', style: TextStyle(fontWeight: FontWeight.w700)),
     );
   }
 }
