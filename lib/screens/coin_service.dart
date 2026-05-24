@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math' as math;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -288,6 +289,90 @@ class CoinService {
       final list = entries.map((e) => e.toMap()).toList();
       await prefs.setString(_historyCacheKey, json.encode(list));
     } catch (_) {}
+  }
+
+  static String generateReferralCode() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    final rnd = math.Random();
+    return String.fromCharCodes(Iterable.generate(
+        6, (_) => chars.codeUnitAt(rnd.nextInt(chars.length))));
+  }
+
+  static Future<String> generateUniqueReferralCode() async {
+    while (true) {
+      final code = generateReferralCode();
+      final query = await FirebaseFirestore.instance
+          .collection('users')
+          .where('referralCode', isEqualTo: code)
+          .limit(1)
+          .get();
+      if (query.docs.isEmpty) {
+        return code;
+      }
+    }
+  }
+
+  static Future<void> claimReferralCode({
+    required String code,
+    required String currentUid,
+  }) async {
+    final userRef = FirebaseFirestore.instance.collection('users').doc(currentUid);
+    
+    final referrerQuery = await FirebaseFirestore.instance
+        .collection('users')
+        .where('referralCode', isEqualTo: code.trim().toUpperCase())
+        .limit(1)
+        .get();
+
+    if (referrerQuery.docs.isEmpty) {
+      throw FirebaseException(
+        plugin: 'cloud_firestore',
+        code: 'invalid-code',
+        message: 'Invalid referral code.',
+      );
+    }
+
+    final referrerDoc = referrerQuery.docs.first;
+    final referrerUid = referrerDoc.id;
+
+    if (referrerUid == currentUid) {
+      throw FirebaseException(
+        plugin: 'cloud_firestore',
+        code: 'self-referral',
+        message: 'You cannot claim your own code.',
+      );
+    }
+
+    await FirebaseFirestore.instance.runTransaction((transaction) async {
+      final userSnap = await transaction.get(userRef);
+      final userData = userSnap.data() ?? <String, dynamic>{};
+
+      if (userData['referralClaimed'] == true) {
+        throw FirebaseException(
+          plugin: 'cloud_firestore',
+          code: 'already-claimed',
+          message: 'You have already claimed a referral bonus.',
+        );
+      }
+
+      final currentCoins = (userData['coins'] as num?)?.toInt() ?? 0;
+      final nextCoins = currentCoins + 100;
+
+      final historyRef = userRef.collection('coin_history').doc();
+      
+      transaction.set(userRef, {
+        'coins': nextCoins,
+        'referralClaimed': true,
+        'referredBy': referrerUid,
+      }, SetOptions(merge: true));
+
+      transaction.set(historyRef, {
+        'amount': 100,
+        'title': 'Referral claim bonus',
+        'type': 'referral_claim',
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    });
   }
 }
 
