@@ -310,16 +310,10 @@ class _TournamentTabState extends State<_TournamentTab> {
                     _InfoCard(
                       title: 'Rewards',
                       icon: Icons.workspace_premium_rounded,
+                      showBorder: false,
                       child: widget.rewardProducts.isEmpty
                           ? const _BulletRow(text: 'Winner: 500 coins')
-                          : Column(
-                              children: [
-                                for (final reward in widget.rewardProducts) ...[
-                                  _RewardProductCard(product: reward),
-                                  const SizedBox(height: 12),
-                                ],
-                              ],
-                            ),
+                          : _RewardCarousel(rewardProducts: widget.rewardProducts),
                     ),
                     if (widget.showMatches) ...[
                       const SizedBox(height: 16),
@@ -719,11 +713,13 @@ class _InfoCard extends StatelessWidget {
     required this.title,
     required this.icon,
     required this.child,
+    this.showBorder = true,
   });
 
   final String title;
   final IconData icon;
   final Widget child;
+  final bool showBorder;
 
   @override
   Widget build(BuildContext context) {
@@ -733,7 +729,7 @@ class _InfoCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: isDark ? cardBackground : Colors.grey.shade100,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: primaryColor.withValues(alpha: 0.1)),
+        border: showBorder ? Border.all(color: primaryColor.withValues(alpha: 0.1)) : null,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -881,6 +877,81 @@ class _SoloOnlyBannerState extends State<_SoloOnlyBanner> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _RewardCarousel extends StatefulWidget {
+  const _RewardCarousel({required this.rewardProducts});
+
+  final List<_RewardProduct> rewardProducts;
+
+  @override
+  State<_RewardCarousel> createState() => _RewardCarouselState();
+}
+
+class _RewardCarouselState extends State<_RewardCarousel> {
+  late final PageController _pageController;
+  int _currentPage = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController();
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        SizedBox(
+          height: 180,
+          child: PageView.builder(
+            controller: _pageController,
+            onPageChanged: (index) {
+              setState(() {
+                _currentPage = index;
+              });
+            },
+            itemCount: widget.rewardProducts.length,
+            itemBuilder: (context, index) {
+              final reward = widget.rewardProducts[index];
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                child: Align(
+                  alignment: Alignment.topCenter,
+                  child: _RewardProductCard(product: reward),
+                ),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(
+            widget.rewardProducts.length,
+            (index) => AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              height: 8,
+              width: _currentPage == index ? 20 : 8,
+              decoration: BoxDecoration(
+                color: _currentPage == index
+                    ? primaryColor
+                    : primaryColor.withValues(alpha: 0.24),
+                borderRadius: BorderRadius.circular(999),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
