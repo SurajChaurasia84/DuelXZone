@@ -355,7 +355,11 @@ class ProfileScreen extends StatelessWidget {
                           final packageName = packageInfo.packageName;
                           final shareText = 'Hey! Join me on DuelXZone and participate in exciting battles. Download now: https://play.google.com/store/apps/details?id=$packageName';
                           
-                          await Share.share(shareText);
+                          await SharePlus.instance.share(
+                            ShareParams(
+                              text: shareText,
+                            ),
+                          );
                         },
                       ),
                       ListTile(
