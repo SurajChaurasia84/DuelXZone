@@ -262,8 +262,12 @@ class _BattleSubmissionScreenState extends State<BattleSubmissionScreen> {
       setState(() {
         _clearDraft();
       });
-    } on FirebaseException catch (e) {
-      _showMessage(e.message ?? 'Unable to submit battle.');
+    } catch (e) {
+      String msg = e.toString();
+      if (e is FirebaseException) {
+        msg = e.message ?? msg;
+      }
+      _showMessage(msg, isError: true);
     } finally {
       if (mounted) setState(() => _savingBattle = false);
     }
@@ -279,8 +283,12 @@ class _BattleSubmissionScreenState extends State<BattleSubmissionScreen> {
       );
       if (!mounted) return;
       _showMessage('Final submission complete');
-    } on FirebaseException catch (e) {
-      _showMessage(e.message ?? 'Unable to submit.');
+    } catch (e) {
+      String msg = e.toString();
+      if (e is FirebaseException) {
+        msg = e.message ?? msg;
+      }
+      _showMessage(msg, isError: true);
     } finally {
       if (mounted) setState(() => _finalSubmitting = false);
     }
@@ -329,12 +337,21 @@ class _BattleSubmissionScreenState extends State<BattleSubmissionScreen> {
     _imagePath = null;
   }
 
-  void _showMessage(String text) {
+  void _showMessage(String text, {bool isError = false}) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         behavior: SnackBarBehavior.floating,
-        content: Text(text),
+        backgroundColor: isError ? Colors.red.shade800 : null,
+        content: Row(
+          children: [
+            if (isError) ...[
+              const Icon(Icons.error_outline_rounded, color: Colors.white),
+              const SizedBox(width: 8),
+            ],
+            Expanded(child: Text(text)),
+          ],
+        ),
       ),
     );
   }
