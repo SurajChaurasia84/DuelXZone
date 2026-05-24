@@ -184,7 +184,6 @@ class BattleService {
       'joinedAt': Timestamp.fromDate(joinedAt),
       'entryPaid': false,
       'screenshotUrl': null,
-      'recordingUrl': null,
       'submittedAt': null,
     };
   }
@@ -456,7 +455,6 @@ class BattleService {
   static Future<void> uploadBattleProof({
     required String battleId,
     required File file,
-    required BattleProofType type,
   }) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
@@ -473,7 +471,7 @@ class BattleService {
         .child('battle_uploads')
         .child(battleId)
         .child(user.uid)
-        .child('${type.name}.$extension');
+        .child('screenshot.$extension');
 
     await storageRef.putFile(file);
     final downloadUrl = await storageRef.getDownloadURL();
@@ -482,8 +480,7 @@ class BattleService {
     await battleRef.set({
       'players': {
         user.uid: {
-          type == BattleProofType.screenshot ? 'screenshotUrl' : 'recordingUrl':
-              downloadUrl,
+          'screenshotUrl': downloadUrl,
           'submittedAt': FieldValue.serverTimestamp(),
         },
       },
@@ -507,7 +504,7 @@ class BattleService {
       final now = DateTime.now();
       final playerIds = List<String>.from(battle['playerIds'] as List<dynamic>? ?? []);
       final players = Map<String, dynamic>.from(
-        (battle['players'] as Map<String, dynamic>?) ?? <String, dynamic>{},
+          (battle['players'] as Map<String, dynamic>?) ?? <String, dynamic>{},
       );
       final completePlayers = <String>[];
 
@@ -516,8 +513,7 @@ class BattleService {
           (players[id] as Map<String, dynamic>?) ?? <String, dynamic>{},
         );
         final hasScreenshot = (player['screenshotUrl'] as String?)?.isNotEmpty == true;
-        final hasRecording = (player['recordingUrl'] as String?)?.isNotEmpty == true;
-        if (hasScreenshot && hasRecording) {
+        if (hasScreenshot) {
           completePlayers.add(id);
         }
       }
@@ -556,9 +552,4 @@ class BattleService {
       }, SetOptions(merge: true));
     });
   }
-}
-
-enum BattleProofType {
-  screenshot,
-  recording,
 }
