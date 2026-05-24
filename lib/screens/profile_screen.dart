@@ -177,7 +177,7 @@ class ProfileScreen extends StatelessWidget {
                         leading: const Icon(Icons.person, color: primaryColor),
                         title: const Text('Edit Profile'),
                         subtitle: Text(
-                          'Change name, username, game details',
+                          'Update your profile detail',
                           style: TextStyle(
                             color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                           ),
