@@ -233,7 +233,6 @@ class BattleSubmissionService {
     required int kills,
     required String rank,
     required File imageFile,
-    required File videoFile,
   }) async {
     final participantRef = participantDoc(cycleId: cycleId, username: username);
     final snap = await participantRef.get();
@@ -281,13 +280,6 @@ class BattleSubmissionService {
       type: 'image',
       file: imageFile,
     );
-    final videoUrl = await _uploadFile(
-      cycleId: cycleId,
-      username: username,
-      battleNumber: battleNumber,
-      type: 'video',
-      file: videoFile,
-    );
 
     final points = calculatePoints(kills: kills, rank: rank);
 
@@ -296,7 +288,6 @@ class BattleSubmissionService {
         'kills': kills,
         'rank': rank,
         'image': imageUrl,
-        'video': videoUrl,
         'points': points,
       },
     }, SetOptions(merge: true));
@@ -379,7 +370,6 @@ class BattleSubmissionService {
     return battle['kills'] != null &&
         battle['rank'] != null &&
         battle['image'] != null &&
-        battle['video'] != null &&
         battle['points'] != null;
   }
 
