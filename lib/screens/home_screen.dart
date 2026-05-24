@@ -428,7 +428,7 @@ class _TournamentBanner extends StatelessWidget {
                         );
                       },
                       child: Text(
-                        'See battles >',
+                        'Join battles >',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: primaryColor,
                           fontWeight: FontWeight.w800,
