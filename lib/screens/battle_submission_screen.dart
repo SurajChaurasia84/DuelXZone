@@ -24,7 +24,6 @@ class _BattleSubmissionScreenState extends State<BattleSubmissionScreen> {
   int _selectedBattle = 1;
   String? _selectedRank;
   String? _imagePath;
-  String? _videoPath;
   bool _savingBattle = false;
   bool _finalSubmitting = false;
 
@@ -165,11 +164,9 @@ class _BattleSubmissionScreenState extends State<BattleSubmissionScreen> {
                     killsController: _killsController,
                     selectedRank: _selectedRank,
                     imagePath: _imagePath,
-                    videoPath: _videoPath,
                     disabled: isFinalSubmitted,
                     onRankChanged: (value) => setState(() => _selectedRank = value),
                     onPickImage: _pickImage,
-                    onPickVideo: _pickVideo,
                   ),
                   if (showFinalSubmit)
                     const SizedBox(height: 8),
@@ -227,21 +224,14 @@ class _BattleSubmissionScreenState extends State<BattleSubmissionScreen> {
     setState(() => _imagePath = path);
   }
 
-  Future<void> _pickVideo() async {
-    final result = await FilePicker.pickFiles(type: FileType.video);
-    final path = result?.files.single.path;
-    if (path == null) return;
-    setState(() => _videoPath = path);
-  }
-
   Future<void> _submitBattle(BattleSubmissionUser user) async {
     final kills = int.tryParse(_killsController.text.trim());
     if (kills == null || kills < 0 || _selectedRank == null) {
       _showMessage('Enter valid kills and rank.');
       return;
     }
-    if (_imagePath == null || _videoPath == null) {
-      _showMessage('Upload image and video.');
+    if (_imagePath == null) {
+      _showMessage('Upload screenshot proof.');
       return;
     }
 
@@ -255,7 +245,6 @@ class _BattleSubmissionScreenState extends State<BattleSubmissionScreen> {
         kills: kills,
         rank: _selectedRank!,
         imageFile: File(_imagePath!),
-        videoFile: File(_videoPath!),
       );
       if (widget.cycle.battleCount == 1) {
         await BattleSubmissionService.finalSubmit(
@@ -332,14 +321,12 @@ class _BattleSubmissionScreenState extends State<BattleSubmissionScreen> {
     _killsController.text = battle['kills']?.toString() ?? '';
     _selectedRank = battle['rank'] as String?;
     _imagePath = null;
-    _videoPath = null;
   }
 
   void _clearDraft() {
     _killsController.clear();
     _selectedRank = null;
     _imagePath = null;
-    _videoPath = null;
   }
 
   void _showMessage(String text) {
@@ -362,11 +349,9 @@ class _BattleCard extends StatelessWidget {
     required this.killsController,
     required this.selectedRank,
     required this.imagePath,
-    required this.videoPath,
     required this.disabled,
     required this.onRankChanged,
     required this.onPickImage,
-    required this.onPickVideo,
   });
 
   final int battleNumber;
@@ -376,11 +361,9 @@ class _BattleCard extends StatelessWidget {
   final TextEditingController killsController;
   final String? selectedRank;
   final String? imagePath;
-  final String? videoPath;
   final bool disabled;
   final ValueChanged<String?> onRankChanged;
   final VoidCallback onPickImage;
-  final VoidCallback onPickVideo;
 
   @override
   Widget build(BuildContext context) {
@@ -439,14 +422,6 @@ class _BattleCard extends StatelessWidget {
             icon: Icons.image_outlined,
             enabled: !isDisabled,
             onTap: onPickImage,
-          ),
-          const SizedBox(height: 12),
-          _UploadSection(
-            label: 'Video',
-            buttonLabel: videoPath == null ? 'Upload Video' : 'Video Added',
-            icon: Icons.video_file_outlined,
-            enabled: !isDisabled,
-            onTap: onPickVideo,
           ),
           const SizedBox(height: 16),
           TextField(
