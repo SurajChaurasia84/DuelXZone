@@ -7,6 +7,7 @@ import 'battle_service.dart';
 import 'battles_screen.dart';
 import 'coin_badge.dart';
 import 'coin_service.dart';
+import 'edit_profile_screen.dart';
 import 'leaderboard_screen.dart';
 import 'screen_constants.dart';
 import 'notification_screen.dart';
@@ -213,13 +214,15 @@ class _HomeScreenState extends State<HomeScreen> {
               _showSignupBonus();
             }
 
-            final username =
-                (data?['username'] as String?)?.trim().isNotEmpty == true
-                ? (data?['username'] as String).trim()
-                : (cached['username']?.trim().isNotEmpty == true
-                      ? cached['username']!.trim()
-                      : (user?.displayName ?? cached['name'] ?? 'Player')
-                            .trim());
+            final game = ((data?['game'] as String?) ?? cached['game'] ?? '').trim();
+            final gameId = ((data?['gameId'] as String?) ?? cached['gameId'] ?? '').trim();
+            final gameLevel =
+                (data?['gameLevel']?.toString() ?? cached['gameLevel'] ?? '').trim();
+            final currentUsername =
+                ((data?['username'] as String?) ?? cached['username'] ?? '').trim();
+            final name = ((data?['name'] as String?) ?? cached['name'] ?? '').trim();
+
+            final username = currentUsername.isNotEmpty ? currentUsername : name.isNotEmpty ? name : 'Player';
             final photoUrl =
                 (data?['photo'] as String?)?.trim().isNotEmpty == true
                 ? (data?['photo'] as String).trim()
@@ -230,7 +233,15 @@ class _HomeScreenState extends State<HomeScreen> {
             return Scaffold(
               appBar: AppBar(
                 titleSpacing: 20,
-                title: _TopBarTitle(username: username, photoUrl: photoUrl),
+                title: _TopBarTitle(
+                  username: username,
+                  photoUrl: photoUrl,
+                  currentName: name,
+                  currentUsername: currentUsername,
+                  currentGame: game,
+                  currentGameId: gameId,
+                  currentGameLevel: gameLevel,
+                ),
                 actions: [
                   IconButton(
                     onPressed: () {
@@ -282,24 +293,52 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 class _TopBarTitle extends StatelessWidget {
-  const _TopBarTitle({required this.username, required this.photoUrl});
+  const _TopBarTitle({
+    required this.username,
+    required this.photoUrl,
+    required this.currentName,
+    required this.currentUsername,
+    required this.currentGame,
+    required this.currentGameId,
+    required this.currentGameLevel,
+  });
 
   final String username;
   final String? photoUrl;
+  final String currentName;
+  final String currentUsername;
+  final String currentGame;
+  final String currentGameId;
+  final String currentGameLevel;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        CircleAvatar(
-          radius: 22,
-          backgroundColor: primaryColor.withValues(alpha: 0.14),
-          backgroundImage: (photoUrl ?? '').isEmpty
-              ? null
-              : NetworkImage(photoUrl!),
-          child: (photoUrl ?? '').isEmpty
-              ? const Icon(Icons.person, color: primaryColor)
-              : null,
+        GestureDetector(
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => EditProfileScreen(
+                  currentName: currentName,
+                  currentUsername: currentUsername,
+                  currentGame: currentGame,
+                  currentGameId: currentGameId,
+                  currentGameLevel: currentGameLevel,
+                ),
+              ),
+            );
+          },
+          child: CircleAvatar(
+            radius: 22,
+            backgroundColor: primaryColor.withValues(alpha: 0.14),
+            backgroundImage: (photoUrl ?? '').isEmpty
+                ? null
+                : NetworkImage(photoUrl!),
+            child: (photoUrl ?? '').isEmpty
+                ? const Icon(Icons.person, color: primaryColor)
+                : null,
+          ),
         ),
         const SizedBox(width: 12),
         Expanded(
