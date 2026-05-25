@@ -148,7 +148,6 @@ class _BattleRoomScreenState extends State<BattleRoomScreen> {
         final expiresAt = battle['expiresAt'] is Timestamp
             ? (battle['expiresAt'] as Timestamp).toDate()
             : null;
-        final timeLeft = expiresAt == null ? Duration.zero : expiresAt.difference(DateTime.now());
         final screenshotDone = (me['screenshotUrl'] as String?)?.isNotEmpty == true;
         final canUpload =
             status == 'ongoing' || status == 'pending_admin' || status == 'review';
@@ -173,7 +172,7 @@ class _BattleRoomScreenState extends State<BattleRoomScreen> {
                 status: status,
                 entryFee: (battle['entryFee'] as num?)?.toInt() ?? 0,
                 resultText: (battle['resultText'] as String?) ?? '',
-                timeLeft: timeLeft,
+                expiresAt: expiresAt,
                 waitingSecondsLeft: _waitingSecondsLeft,
               ),
               const SizedBox(height: 18),
@@ -388,25 +387,81 @@ class _BattleRoomScreenState extends State<BattleRoomScreen> {
   }
 }
 
-class _RoomHeader extends StatelessWidget {
+class _RoomHeader extends StatefulWidget {
   const _RoomHeader({
     required this.status,
     required this.entryFee,
     required this.resultText,
-    required this.timeLeft,
+    required this.expiresAt,
     this.waitingSecondsLeft,
   });
 
   final String status;
   final int entryFee;
   final String resultText;
-  final Duration timeLeft;
+  final DateTime? expiresAt;
   final int? waitingSecondsLeft;
 
   @override
+  State<_RoomHeader> createState() => _RoomHeaderState();
+}
+
+class _RoomHeaderState extends State<_RoomHeader> {
+  Timer? _timer;
+  late Duration _timeLeft;
+
+  @override
+  void initState() {
+    super.initState();
+    _updateTimeLeft();
+    _startTimer();
+  }
+
+  @override
+  void didUpdateWidget(covariant _RoomHeader oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _updateTimeLeft();
+    _startTimer();
+  }
+
+  void _updateTimeLeft() {
+    if (widget.expiresAt == null) {
+      _timeLeft = Duration.zero;
+    } else {
+      _timeLeft = widget.expiresAt!.difference(DateTime.now());
+      if (_timeLeft.isNegative) {
+        _timeLeft = Duration.zero;
+      }
+    }
+  }
+
+  void _startTimer() {
+    _timer?.cancel();
+    if (widget.expiresAt == null || widget.status == 'waiting') return;
+
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) return;
+      setState(() {
+        _updateTimeLeft();
+        if (_timeLeft == Duration.zero) {
+          _timer?.cancel();
+        }
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final minutes = timeLeft.inMinutes.clamp(0, 999);
-    final seconds = (timeLeft.inSeconds % 60).clamp(0, 59);
+    final minutes = _timeLeft.inMinutes.clamp(0, 999);
+    final seconds = (_timeLeft.inSeconds % 60).clamp(0, 59);
+
+    final isWaiting = widget.status == 'waiting';
 
     return Container(
       padding: const EdgeInsets.all(18),
@@ -427,7 +482,7 @@ class _RoomHeader extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Entry Fee: $entryFee coins',
+            'Entry Fee: ${widget.entryFee} coins',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   color: Colors.white,
                   fontWeight: FontWeight.w800,
@@ -435,7 +490,7 @@ class _RoomHeader extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            resultText.isEmpty ? 'Room active' : resultText,
+            widget.resultText.isEmpty ? 'Room active' : widget.resultText,
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                   color: Colors.white.withValues(alpha: 0.9),
                 ),
@@ -443,11 +498,11 @@ class _RoomHeader extends StatelessWidget {
           const SizedBox(height: 14),
           Row(
             children: [
-              _StatusPill(label: status.toUpperCase()),
+              _StatusPill(label: widget.status.toUpperCase()),
               const SizedBox(width: 10),
-              if (status == 'waiting' && waitingSecondsLeft != null)
-                _StatusPill(label: 'Searching: ${waitingSecondsLeft}s left')
-              else if (status != 'waiting')
+              if (isWaiting && widget.waitingSecondsLeft != null)
+                _StatusPill(label: 'Searching: ${widget.waitingSecondsLeft}s left')
+              else if (!isWaiting)
                 _StatusPill(label: '${minutes}m ${seconds}s left'),
             ],
           ),
