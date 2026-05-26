@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 
 import 'battle_submission_service.dart';
 import 'screen_constants.dart';
+import '../services/ad_service.dart';
 
 class BattleSubmissionScreen extends StatefulWidget {
   const BattleSubmissionScreen({
@@ -259,6 +260,10 @@ class _BattleSubmissionScreenState extends State<BattleSubmissionScreen> {
             ? 'Daily battle submitted successfully'
             : 'Battle $_selectedBattle submitted',
       );
+      
+      // Show Interstitial Ad upon successful battle submit
+      AdService().showInterstitialAd();
+
       setState(() {
         _clearDraft();
       });
@@ -283,6 +288,9 @@ class _BattleSubmissionScreenState extends State<BattleSubmissionScreen> {
       );
       if (!mounted) return;
       _showMessage('Final submission complete');
+      
+      // Show Interstitial Ad upon successful final submit
+      AdService().showInterstitialAd();
     } catch (e) {
       String msg = e.toString();
       if (e is FirebaseException) {
