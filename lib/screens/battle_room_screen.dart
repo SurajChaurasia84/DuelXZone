@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 
 import 'battle_service.dart';
 import 'screen_constants.dart';
+import '../services/ad_service.dart';
 
 class BattleRoomScreen extends StatefulWidget {
   const BattleRoomScreen({
@@ -811,6 +812,10 @@ class _SubmitResultSheetState extends State<_SubmitResultSheet> {
       await widget.onSubmit(File(_imagePath!), kills, _selectedRank!);
       if (!mounted) return;
       Navigator.of(context).pop();
+      
+      // Show Interstitial Ad upon successful result submission
+      AdService().showInterstitialAd();
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           behavior: SnackBarBehavior.floating,
