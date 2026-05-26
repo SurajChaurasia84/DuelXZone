@@ -18,6 +18,8 @@ import 'status_screen.dart';
 import 'system_ui.dart';
 import 'theme_controller.dart';
 import '../services/notification_service.dart';
+import '../services/ad_service.dart';
+import 'package:unity_ads_plugin/unity_ads_plugin.dart';
 
 class App extends StatefulWidget {
   const App({super.key});
@@ -389,6 +391,8 @@ class AppShell extends StatefulWidget {
 }
 
 class _AppShellState extends State<AppShell> {
+  bool _isBannerAdLoaded = false;
+
   @override
   void initState() {
     super.initState();
@@ -430,7 +434,41 @@ class _AppShellState extends State<AppShell> {
           }
         },
         child: Scaffold(
-          body: IndexedStack(index: currentIndex, children: screens),
+          body: Column(
+            children: [
+              Expanded(
+                child: IndexedStack(index: currentIndex, children: screens),
+              ),
+              Offstage(
+                offstage: !_isBannerAdLoaded,
+                child: Container(
+                  height: 50,
+                  width: double.infinity,
+                  alignment: Alignment.center,
+                  color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                  child: Theme.of(context).platform == TargetPlatform.android
+                      ? UnityBannerAd(
+                          placementId: AdService.bannerPlacementId,
+                          onLoad: (placementId) {
+                            if (mounted && !_isBannerAdLoaded) {
+                              setState(() {
+                                _isBannerAdLoaded = true;
+                              });
+                            }
+                          },
+                          onFailed: (placementId, error, message) {
+                            if (mounted && _isBannerAdLoaded) {
+                              setState(() {
+                                _isBannerAdLoaded = false;
+                              });
+                            }
+                          },
+                        )
+                      : const SizedBox.shrink(),
+                ),
+              ),
+            ],
+          ),
         bottomNavigationBar: Container(
           decoration: BoxDecoration(
             color: background,
