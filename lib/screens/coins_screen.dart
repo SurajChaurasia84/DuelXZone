@@ -7,8 +7,128 @@ import 'coin_service.dart';
 import 'screen_constants.dart';
 import 'user_cache_service.dart';
 
-class CoinsScreen extends StatelessWidget {
+import '../services/ad_service.dart';
+
+class CoinsScreen extends StatefulWidget {
   const CoinsScreen({super.key});
+
+  @override
+  State<CoinsScreen> createState() => _CoinsScreenState();
+}
+
+class _CoinsScreenState extends State<CoinsScreen> {
+  bool _isAdActionLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Preload rewarded ad on screen entry
+    AdService().loadAd(AdService.rewardedPlacementId);
+  }
+
+  Future<void> _handleWatchAdReward(BuildContext context) async {
+    if (_isAdActionLoading) return;
+
+    setState(() {
+      _isAdActionLoading = true;
+    });
+
+    final adService = AdService();
+    final isReady = adService.isAdReady(AdService.rewardedPlacementId);
+    
+    if (!isReady) {
+      // Show custom styled loading dialog
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogCtx) => const Center(
+          child: Card(
+            elevation: 4,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(Radius.circular(22)),
+            ),
+            child: Padding(
+              padding: EdgeInsets.all(28.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(
+                    color: primaryColor,
+                    strokeWidth: 3.5,
+                  ),
+                  SizedBox(height: 20),
+                  Text(
+                    'Loading Ad...',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 16,
+                    ),
+                  ),
+                  SizedBox(height: 6),
+                  Text(
+                    'Please wait a moment',
+                    style: TextStyle(
+                      color: Colors.grey,
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final loaded = await adService.loadAdAsync(AdService.rewardedPlacementId);
+
+      // Dismiss dialog
+      if (context.mounted) {
+        Navigator.of(context).pop();
+      }
+
+      if (!loaded) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              behavior: SnackBarBehavior.floating,
+              content: Text('Failed to load video ad. Please try again later.'),
+            ),
+          );
+        }
+        setState(() {
+          _isAdActionLoading = false;
+        });
+        return;
+      }
+    }
+
+    setState(() {
+      _isAdActionLoading = false;
+    });
+
+    if (!context.mounted) return;
+
+    // Ad is ready, show it
+    adService.showRewardedAd(
+      onComplete: () {
+        _runRewardAction(
+          context,
+          () => CoinService.claimAdReward(),
+          successPrefix: 'Ad reward claimed',
+        );
+      },
+      onFailed: () {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              behavior: SnackBarBehavior.floating,
+              content: Text('Ad watching was skipped or failed. No coins rewarded.'),
+            ),
+          );
+        }
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -59,14 +179,10 @@ class CoinsScreen extends StatelessWidget {
                 subtitle: '+${CoinService.adReward} coins once per day',
                 icon: Icons.ondemand_video_rounded,
                 buttonText: adRewardClaimed ? 'Claimed' : 'Watch',
-                enabled: !adRewardClaimed,
-                onTap: adRewardClaimed
+                enabled: Theme.of(context).platform == TargetPlatform.android && !adRewardClaimed && !_isAdActionLoading,
+                onTap: Theme.of(context).platform != TargetPlatform.android || adRewardClaimed || _isAdActionLoading
                     ? null
-                    : () => _runRewardAction(
-                          context,
-                          () => CoinService.claimAdReward(),
-                          successPrefix: 'Ad reward claimed',
-                        ),
+                    : () => _handleWatchAdReward(context),
               ),
 
               const SizedBox(height: 12),
