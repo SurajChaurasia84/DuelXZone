@@ -23,7 +23,7 @@ class NotificationScreen extends StatelessWidget {
           : StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
               stream: FirebaseFirestore.instance
                   .collection('notifications')
-                  .where('recipientId', isEqualTo: user.uid)
+                  .where('recipientId', whereIn: [user.uid, 'all', 'ALL_USERS'])
                   .orderBy('timestamp', descending: true)
                   .snapshots(),
               builder: (context, snapshot) {
