@@ -219,7 +219,7 @@ class _HomeScreenState extends State<HomeScreen> {
             }
             final mergedUserData = <String, dynamic>{
               ...cached,
-              if (data != null) ...data,
+              ...?data,
             };
             if (data?['signupBonusPending'] == true) {
               _showSignupBonus();
