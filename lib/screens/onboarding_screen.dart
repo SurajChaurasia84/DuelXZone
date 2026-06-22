@@ -10,6 +10,8 @@ import 'system_ui.dart';
 import 'user_cache_service.dart';
 
 class OnboardingScreen extends StatefulWidget {
+  static final ValueNotifier<bool> skipped = ValueNotifier(false);
+
   const OnboardingScreen({
     super.key,
     required this.onCompleted,
@@ -432,6 +434,22 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             ),
           ),
         ),
+        if (_signedInUser == null) ...[
+          const SizedBox(height: 12),
+          TextButton(
+            onPressed: () {
+              OnboardingScreen.skipped.value = true;
+            },
+            child: Text(
+              'Skip Onboarding',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.65),
+                fontWeight: FontWeight.w700,
+                fontSize: 15,
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }
