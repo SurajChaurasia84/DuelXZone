@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'coin_service.dart';
 import 'screen_constants.dart';
@@ -11,6 +12,12 @@ import 'user_cache_service.dart';
 
 class OnboardingScreen extends StatefulWidget {
   static final ValueNotifier<bool> skipped = ValueNotifier(false);
+
+  static Future<void> setSkipped(bool val) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('onboarding_skipped', val);
+    skipped.value = val;
+  }
 
   const OnboardingScreen({
     super.key,
@@ -438,7 +445,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           const SizedBox(height: 12),
           TextButton(
             onPressed: () {
-              OnboardingScreen.skipped.value = true;
+              OnboardingScreen.setSkipped(true);
             },
             child: Text(
               'Skip Onboarding',
