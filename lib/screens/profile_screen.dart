@@ -69,7 +69,7 @@ class ProfileScreen extends StatelessWidget {
                   child: FilledButton(
                     onPressed: () {
                       AppTabController.goTo(0);
-                      OnboardingScreen.skipped.value = false;
+                      OnboardingScreen.setSkipped(false);
                     },
                     style: FilledButton.styleFrom(
                       backgroundColor: primaryColor,
@@ -496,7 +496,7 @@ class ProfileScreen extends StatelessWidget {
           TextButton(
             onPressed: () async {
               Navigator.pop(context);
-              OnboardingScreen.skipped.value = false;
+              await OnboardingScreen.setSkipped(false);
               await FirebaseAuth.instance.signOut();
               await GoogleSignIn.instance.signOut();
             },
