@@ -7,6 +7,8 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'edit_profile_screen.dart';
+import 'navigation_controller.dart';
+import 'onboarding_screen.dart';
 import 'refer_screen.dart';
 import 'info_content_screen.dart';
 import 'screen_constants.dart';
@@ -19,10 +21,83 @@ class ProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Profile')),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 28.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  height: 100,
+                  width: 100,
+                  decoration: BoxDecoration(
+                    color: primaryColor.withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.account_circle_outlined,
+                    size: 64,
+                    color: primaryColor,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  'Join the DuelXZone!',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.w900,
+                      ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Login to continue using DuelXZone & joining in battles.',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withValues(alpha: 0.65),
+                        height: 1.5,
+                      ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 32),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: () {
+                      AppTabController.goTo(0);
+                      OnboardingScreen.skipped.value = false;
+                    },
+                    style: FilledButton.styleFrom(
+                      backgroundColor: primaryColor,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 18),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: const Text(
+                      'Login',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     final brightness = MediaQuery.platformBrightnessOf(context);
-    final userStream = user == null
-        ? null
-        : FirebaseFirestore.instance.collection('users').doc(user.uid).snapshots();
+    final userStream = FirebaseFirestore.instance.collection('users').doc(user.uid).snapshots();
 
     return Scaffold(
       appBar: AppBar(title: const Text('Profile')),
@@ -73,14 +148,14 @@ class ProfileScreen extends StatelessWidget {
                             ),
                             const SizedBox(height: 16),
                             Text(
-                              name.isEmpty ? (user?.displayName ?? 'Player') : name,
+                              name.isEmpty ? (user.displayName ?? 'Player') : name,
                               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                                     fontWeight: FontWeight.w800,
                                   ),
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              email.isEmpty ? (user?.email ?? '') : email,
+                              email.isEmpty ? (user.email ?? '') : email,
                               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                     color: Theme.of(context)
                                         .colorScheme
@@ -421,6 +496,7 @@ class ProfileScreen extends StatelessWidget {
           TextButton(
             onPressed: () async {
               Navigator.pop(context);
+              OnboardingScreen.skipped.value = false;
               await FirebaseAuth.instance.signOut();
               await GoogleSignIn.instance.signOut();
             },
