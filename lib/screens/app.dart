@@ -339,26 +339,13 @@ class _AuthGate extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<User?>(
-      stream: FirebaseAuth.instance.authStateChanges(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const StatusScreen(
-            title: 'Loading DuelXZone',
-            subtitle: 'Preparing your arena...',
-            loading: true,
-          );
-        }
-
-        final user = snapshot.data;
-        if (user == null) {
-          return OnboardingScreen(onCompleted: onOnboardingComplete);
-        }
-
-        return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-          future: FirebaseFirestore.instance.collection('users').doc(user.uid).get(),
-          builder: (context, docSnapshot) {
-            if (docSnapshot.connectionState != ConnectionState.done) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: OnboardingScreen.skipped,
+      builder: (context, isSkipped, _) {
+        return StreamBuilder<User?>(
+          stream: FirebaseAuth.instance.authStateChanges(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
               return const StatusScreen(
                 title: 'Loading DuelXZone',
                 subtitle: 'Preparing your arena...',
@@ -366,15 +353,36 @@ class _AuthGate extends StatelessWidget {
               );
             }
 
-            final data = docSnapshot.data?.data();
-            if (isProfileComplete(data)) {
-              return const AppShell();
+            final user = snapshot.data;
+            if (user == null) {
+              if (isSkipped) {
+                return const AppShell();
+              }
+              return OnboardingScreen(onCompleted: onOnboardingComplete);
             }
 
-            return OnboardingScreen(
-              existingUser: user,
-              existingData: data,
-              onCompleted: onOnboardingComplete,
+            return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+              future: FirebaseFirestore.instance.collection('users').doc(user.uid).get(),
+              builder: (context, docSnapshot) {
+                if (docSnapshot.connectionState != ConnectionState.done) {
+                  return const StatusScreen(
+                    title: 'Loading DuelXZone',
+                    subtitle: 'Preparing your arena...',
+                    loading: true,
+                  );
+                }
+
+                final data = docSnapshot.data?.data();
+                if (isProfileComplete(data) || isSkipped) {
+                  return const AppShell();
+                }
+
+                return OnboardingScreen(
+                  existingUser: user,
+                  existingData: data,
+                  onCompleted: onOnboardingComplete,
+                );
+              },
             );
           },
         );
