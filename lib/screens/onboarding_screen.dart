@@ -363,7 +363,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         ),
         const SizedBox(height: 28),
         Text(
-          'DuelXZone',
+          'DynastyX',
           style: Theme.of(context).textTheme.displaySmall?.copyWith(
                 fontWeight: FontWeight.w800,
               ),
