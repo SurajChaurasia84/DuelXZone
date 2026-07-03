@@ -285,7 +285,7 @@ class _SplashScreenState extends State<_SplashScreen>
                     ),
                     const SizedBox(height: 18),
                     Text(
-                      'DuelXZone',
+                      'DynastyX',
                       style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                             fontWeight: FontWeight.w900,
                           ),
@@ -315,7 +315,7 @@ class _BootstrapGate extends StatelessWidget {
       builder: (context, snapshot) {
         if (snapshot.connectionState != ConnectionState.done) {
           return const StatusScreen(
-            title: 'Loading DuelXZone',
+            title: 'Loading DynastyX',
             subtitle: 'Preparing your arena...',
             loading: true,
           );
@@ -347,7 +347,7 @@ class _AuthGate extends StatelessWidget {
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const StatusScreen(
-                title: 'Loading DuelXZone',
+                title: 'Loading DynastyX',
                 subtitle: 'Preparing your arena...',
                 loading: true,
               );
@@ -366,7 +366,7 @@ class _AuthGate extends StatelessWidget {
               builder: (context, docSnapshot) {
                 if (docSnapshot.connectionState != ConnectionState.done) {
                   return const StatusScreen(
-                    title: 'Loading DuelXZone',
+                    title: 'Loading DynastyX',
                     subtitle: 'Preparing your arena...',
                     loading: true,
                   );
