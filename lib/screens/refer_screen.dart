@@ -393,7 +393,7 @@ class _ReferScreenState extends State<ReferScreen> {
                             onPressed: () async {
                               final packageInfo = await PackageInfo.fromPlatform();
                               final packageName = packageInfo.packageName;
-                              final shareText = 'Hey! Join me on DuelXZone, participate in exciting battles, and claim 100 coins! Download the app and enter my referral code: $referralCode\n\nDownload Link: https://play.google.com/store/apps/details?id=$packageName';
+                              final shareText = 'Hey! Join me on DynastyX, participate in exciting battles, and claim 100 coins! Download the app and enter my referral code: $referralCode\n\nDownload Link: https://play.google.com/store/apps/details?id=$packageName';
                               
                               await SharePlus.instance.share(
                                 ShareParams(
