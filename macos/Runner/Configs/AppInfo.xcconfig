@@ -5,10 +5,10 @@
 // 'flutter create' template.
 
 // The application's name. By default this is also the title of the Flutter window.
-PRODUCT_NAME = duelxzone
+PRODUCT_NAME = DynastyX
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = com.duelxzone.duelxzone
+PRODUCT_BUNDLE_IDENTIFIER = com.duelxzone.dynastyx
 
 // The copyright displayed in application information
-PRODUCT_COPYRIGHT = Copyright © 2026 com.duelxzone. All rights reserved.
+PRODUCT_COPYRIGHT = Copyright © 2026 com.duelxzone.dynastyx. All rights reserved.
