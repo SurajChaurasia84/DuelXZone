@@ -45,7 +45,7 @@ class ProfileScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 24),
                 Text(
-                  'Join the DuelXZone!',
+                  'Join the DynastyX!',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.w900,
                       ),
@@ -53,7 +53,7 @@ class ProfileScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'Login to continue using DuelXZone & joining in battles.',
+                  'Login to continue using DynastyX & joining in battles.',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: Theme.of(context)
                             .colorScheme
@@ -310,7 +310,7 @@ class ProfileScreen extends StatelessWidget {
                                     title: 'Rewards & Payouts',
                                     content: [
                                       'Coins are automatically credited after match verification.',
-                                      'In case of disputes, the decision of the DuelXZone team is final.',
+                                      'In case of disputes, the decision of the DynastyX team is final.',
                                       'Physical rewards (for Mega/Weekly) require valid profile details.',
                                       'In case of a tie (equal points), the player with the higher game level is declared the winner.',
                                     ],
@@ -362,7 +362,7 @@ class ProfileScreen extends StatelessWidget {
                                   InfoSection(
                                     title: 'License & Access',
                                     content: [
-                                      'DuelXZone grants you a limited, non-exclusive license to use the app for personal entertainment.',
+                                      'DynastyX grants you a limited, non-exclusive license to use the app for personal entertainment.',
                                       'Users must be at least 13 years of age to participate in tournaments.',
                                     ],
                                   ),
@@ -371,7 +371,7 @@ class ProfileScreen extends StatelessWidget {
                                     content: [
                                       'Coins are virtual currency and hold no real-world cash value.',
                                       'Transfer of coins between accounts is not permitted.',
-                                      'DuelXZone reserves the right to reset or modify coin balances in case of suspicious activity.',
+                                      'DynastyX reserves the right to reset or modify coin balances in case of suspicious activity.',
                                     ],
                                   ),
                                   InfoSection(
@@ -455,7 +455,7 @@ class ProfileScreen extends StatelessWidget {
                           final version = snapshot.data?.version ?? '1.0.0';
                           return Center(
                             child: Text(
-                              'DuelXZone v$version\n© ${DateTime.now().year} DuelXZone. All rights reserved.',
+                              'DynastyX v$version\n© ${DateTime.now().year} DynastyX. All rights reserved.',
                               textAlign: TextAlign.center,
                               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                     color: Theme.of(context)
