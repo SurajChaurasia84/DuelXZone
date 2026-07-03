@@ -89,13 +89,13 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "com.duelxzone" "\0"
-            VALUE "FileDescription", "duelxzone" "\0"
+            VALUE "CompanyName", "com.duelxzone.dynastyx" "\0"
+            VALUE "FileDescription", "DynastyX" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "duelxzone" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2026 com.duelxzone. All rights reserved." "\0"
-            VALUE "OriginalFilename", "duelxzone.exe" "\0"
-            VALUE "ProductName", "duelxzone" "\0"
+            VALUE "InternalName", "dynastyx" "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2026 com.duelxzone.dynastyx. All rights reserved." "\0"
+            VALUE "OriginalFilename", "dynastyx.exe" "\0"
+            VALUE "ProductName", "DynastyX" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END
