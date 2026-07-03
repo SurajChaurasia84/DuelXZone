@@ -729,7 +729,7 @@ class _SoloOnlyBannerState extends State<_SoloOnlyBanner> {
               title: 'Rewards & Payouts',
               content: [
                 'Coins are automatically credited after match verification.',
-                'In case of disputes, the decision of the DuelXZone team is final.',
+                'In case of disputes, the decision of the DynastyX team is final.',
                 'Physical rewards (for Mega/Weekly) require valid profile details.',
                 'In case of a tie (equal points), the player with the higher game level is declared the winner.',
               ],
